@@ -6,3 +6,4 @@ export { default as Checkout } from './Checkout';
 export { default as MyOrders } from './MyOrders';
 export { default as OrderDetail } from './OrderDetail';
 export { default as Profile } from './Profile';
+export { default as PaymentMethods } from './PaymentMethods';

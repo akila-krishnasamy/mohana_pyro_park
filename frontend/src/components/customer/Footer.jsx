@@ -46,15 +46,15 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                <span>123 Cracker Street, Sivakasi, Tamil Nadu - 626123</span>
+                <span>4/459–28, Sivakasi Main Road, opp. Nayara petrol bunk, Amathur, Sivakasi – 626 005</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-primary-400" />
-                <span>+91 98765 43210</span>
+                <span>+91 96004 28362</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-primary-400" />
-                <span>info@mohanapyro.com</span>
+                <span>mohanapyropark@gmail.com</span>
               </li>
             </ul>
           </div>

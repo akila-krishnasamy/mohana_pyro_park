@@ -1,15 +1,47 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import InventoryLog from '../models/InventoryLog.js';
-import mongoose from 'mongoose';
+import { sendOrderStatusEmail } from '../services/emailService.js';
+
+const trackingStatusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'reached-hub'];
+
+const getCurrentUnitPrice = (product) => {
+  const now = new Date();
+  const startsAt = product.discountStartsAt ? new Date(product.discountStartsAt) : null;
+  const endsAt = product.discountEndsAt ? new Date(product.discountEndsAt) : null;
+  const isActiveDiscount =
+    product.discountPrice != null &&
+    Number(product.discountPrice) < Number(product.price) &&
+    (!startsAt || startsAt <= now) &&
+    (!endsAt || endsAt >= now);
+
+  return isActiveDiscount ? product.discountPrice : product.price;
+};
+
+const deriveStatusFromTracking = (order) => {
+  if (order.arrivedHub?.checked) return 'reached-hub';
+  if (order.reachedHub?.checked) return 'shipped';
+  if (order.shipped?.checked) return 'processing';
+  if (order.orderPicked?.checked) return 'confirmed';
+  return 'pending';
+};
+
+const pushStatusTimeline = (order, status, updatedBy, notes = '') => {
+  const lastStatus = order.statusTimeline?.[order.statusTimeline.length - 1]?.status;
+  if (lastStatus === status) return;
+
+  order.statusTimeline.push({
+    status,
+    timestamp: new Date(),
+    updatedBy,
+    notes
+  });
+};
 
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private/Customer
 export const createOrder = async (req, res, next) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const {
       items,
@@ -21,15 +53,21 @@ export const createOrder = async (req, res, next) => {
       customerNotes
     } = req.body;
 
+    if (!items || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No order items provided'
+      });
+    }
+
     // Validate items and check stock
     let subtotal = 0;
     const orderItems = [];
 
     for (const item of items) {
-      const product = await Product.findById(item.productId).session(session);
+      const product = await Product.findById(item.productId);
 
       if (!product) {
-        await session.abortTransaction();
         return res.status(404).json({
           success: false,
           message: `Product not found: ${item.productId}`
@@ -37,7 +75,6 @@ export const createOrder = async (req, res, next) => {
       }
 
       if (!product.isActive) {
-        await session.abortTransaction();
         return res.status(400).json({
           success: false,
           message: `Product is no longer available: ${product.name}`
@@ -45,14 +82,13 @@ export const createOrder = async (req, res, next) => {
       }
 
       if (product.stock < item.quantity) {
-        await session.abortTransaction();
         return res.status(400).json({
           success: false,
           message: `Insufficient stock for ${product.name}. Available: ${product.stock}`
         });
       }
 
-      const unitPrice = product.discountPrice || product.price;
+      const unitPrice = getCurrentUnitPrice(product);
       const totalPrice = unitPrice * item.quantity;
 
       orderItems.push({
@@ -64,33 +100,26 @@ export const createOrder = async (req, res, next) => {
       });
 
       subtotal += totalPrice;
-
-      // Reduce stock
-      product.stock -= item.quantity;
-      product.totalSold += item.quantity;
-      await product.save({ session });
-
-      // Log inventory change
-      await InventoryLog.create([{
-        product: product._id,
-        type: 'sale',
-        quantity: -item.quantity,
-        previousStock: product.stock + item.quantity,
-        newStock: product.stock,
-        reason: 'Order placed',
-        performedBy: req.user._id
-      }], { session });
     }
 
-    // Calculate delivery charge
-    const deliveryCharge = deliveryType === 'delivery' ? 50 : 0;
+    // Calculate delivery charge (free for orders above 2000)
+    const deliveryCharge = deliveryType === 'delivery' ? (subtotal >= 2000 ? 0 : 100) : 0;
     const totalAmount = subtotal + deliveryCharge;
+
+    // Generate order number
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const orderNumber = `MPP${year}${month}${day}${random}`;
 
     // Determine festival context based on date
     const festivalContext = determineFestivalContext(new Date());
 
     // Create order
-    const order = await Order.create([{
+    const order = await Order.create({
+      orderNumber,
       customer: req.user._id,
       items: orderItems,
       subtotal,
@@ -100,7 +129,7 @@ export const createOrder = async (req, res, next) => {
       deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : undefined,
       pickupDate: deliveryType === 'pickup' ? pickupDate : undefined,
       pickupTimeSlot: deliveryType === 'pickup' ? pickupTimeSlot : undefined,
-      paymentMethod,
+      paymentMethod: paymentMethod || 'cash',
       customerNotes,
       festivalContext,
       status: 'pending',
@@ -109,23 +138,47 @@ export const createOrder = async (req, res, next) => {
         timestamp: new Date(),
         notes: 'Order placed'
       }]
-    }], { session });
+    });
 
-    await session.commitTransaction();
+    // Update product stock and create inventory logs
+    for (const item of orderItems) {
+      const product = await Product.findById(item.product);
+      const previousStock = product.stock;
+      const newStock = previousStock - item.quantity;
 
-    const populatedOrder = await Order.findById(order[0]._id)
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stock: -item.quantity, totalSold: item.quantity }
+      });
+
+      await InventoryLog.create({
+        product: item.product,
+        type: 'sale',
+        quantity: -item.quantity,
+        previousStock,
+        newStock,
+        reason: `Order ${orderNumber}`,
+        relatedOrder: order._id,
+        performedBy: req.user._id
+      });
+    }
+
+    const populatedOrder = await Order.findById(order._id)
       .populate('customer', 'name email phone')
       .populate('items.product', 'name imageUrl');
+
+    await sendOrderStatusEmail({
+      to: populatedOrder.customer?.email,
+      customerName: populatedOrder.customer?.name,
+      orderNumber: populatedOrder.orderNumber,
+      status: populatedOrder.status
+    });
 
     res.status(201).json({
       success: true,
       order: populatedOrder
     });
   } catch (error) {
-    await session.abortTransaction();
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
@@ -261,7 +314,7 @@ export const getAllOrders = async (req, res, next) => {
 
     const orders = await Order.find(query)
       .populate('customer', 'name email phone')
-      .populate('items.product', 'name')
+      .populate('items.product', 'name imageUrl')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -285,7 +338,7 @@ export const getAllOrders = async (req, res, next) => {
 // @access  Private/Staff+
 export const updateOrderStatus = async (req, res, next) => {
   try {
-    const { status, notes } = req.body;
+    const { status, notes, cancellationReason } = req.body;
 
     const order = await Order.findById(req.params.id);
 
@@ -299,62 +352,72 @@ export const updateOrderStatus = async (req, res, next) => {
     // Validate status transition
     const validTransitions = {
       'pending': ['confirmed', 'cancelled'],
-      'confirmed': ['packing', 'cancelled'],
-      'packing': ['ready', 'cancelled'],
-      'ready': ['out-for-delivery', 'picked-up', 'cancelled'],
-      'out-for-delivery': ['delivered', 'cancelled'],
+      'confirmed': ['processing', 'cancelled'],
+      'processing': ['shipped', 'cancelled'],
+      'shipped': ['reached-hub', 'cancelled'],
+      'reached-hub': ['delivered', 'picked-up', 'cancelled'],
       'delivered': [],
       'picked-up': [],
-      'cancelled': []
+      'cancelled': [],
+      // Legacy statuses for backwards compatibility
+      'packing': ['ready', 'cancelled'],
+      'ready': ['out-for-delivery', 'cancelled'],
+      'out-for-delivery': ['delivered', 'cancelled']
     };
 
-    if (!validTransitions[order.status].includes(status)) {
+    if (!validTransitions[order.status] || !validTransitions[order.status].includes(status)) {
       return res.status(400).json({
         success: false,
         message: `Cannot transition from '${order.status}' to '${status}'`
       });
     }
 
-    // Handle cancellation - restore stock
+    // Handle cancellation - restore stock (without transactions)
     if (status === 'cancelled') {
-      const session = await mongoose.startSession();
-      session.startTransaction();
-
       try {
         for (const item of order.items) {
-          const product = await Product.findById(item.product).session(session);
+          const product = await Product.findById(item.product);
           if (product) {
-            product.stock += item.quantity;
-            product.totalSold -= item.quantity;
-            await product.save({ session });
+            const previousStock = product.stock;
+            const newStock = previousStock + item.quantity;
 
-            await InventoryLog.create([{
+            await Product.findByIdAndUpdate(item.product, {
+              $inc: { stock: item.quantity, totalSold: -item.quantity }
+            });
+
+            await InventoryLog.create({
               product: product._id,
               type: 'return',
               quantity: item.quantity,
-              previousStock: product.stock - item.quantity,
-              newStock: product.stock,
+              previousStock,
+              newStock,
               reason: `Order ${order.orderNumber} cancelled`,
               relatedOrder: order._id,
               performedBy: req.user._id
-            }], { session });
+            });
           }
         }
 
         order.status = status;
+        order.cancelledAt = new Date();
+        order.cancellationReason = cancellationReason || '';
+        order.cancelledBy = req.user._id;
+        
+        // Reset all tracking checkboxes when cancelled
+        order.orderPicked = { checked: false, checkedAt: null, checkedBy: null };
+        order.shipped = { checked: false, checkedAt: null, checkedBy: null };
+        order.reachedHub = { checked: false, checkedAt: null, checkedBy: null };
+        order.arrivedHub = { checked: false, checkedAt: null, checkedBy: null };
+        
         order.statusTimeline.push({
           status,
           timestamp: new Date(),
           updatedBy: req.user._id,
-          notes
+          notes: cancellationReason || notes
         });
 
-        await order.save({ session });
-        await session.commitTransaction();
-        session.endSession();
+        await order.save();
       } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
         throw error;
       }
     } else {
@@ -377,7 +440,100 @@ export const updateOrderStatus = async (req, res, next) => {
 
     const updatedOrder = await Order.findById(order._id)
       .populate('customer', 'name email phone')
-      .populate('items.product', 'name');
+      .populate('items.product', 'name imageUrl');
+
+    await sendOrderStatusEmail({
+      to: updatedOrder.customer?.email,
+      customerName: updatedOrder.customer?.name,
+      orderNumber: updatedOrder.orderNumber,
+      status: updatedOrder.status
+    });
+
+    res.json({
+      success: true,
+      order: updatedOrder
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Uncancel order (restore cancelled order to pending)
+// @route   PUT /api/orders/:id/uncancel
+// @access  Private/Manager+
+export const uncancelOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    if (order.status !== 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only cancelled orders can be uncancelled'
+      });
+    }
+
+    // Deduct stock again for uncancelled order
+    for (const item of order.items) {
+      const product = await Product.findById(item.product);
+      if (product) {
+        // Check if there's enough stock
+        if (product.stock < item.quantity) {
+          return res.status(400).json({
+            success: false,
+            message: `Not enough stock for ${product.name}. Available: ${product.stock}, Required: ${item.quantity}`
+          });
+        }
+      }
+    }
+
+    // Deduct stock
+    for (const item of order.items) {
+      const product = await Product.findById(item.product);
+      if (product) {
+        const previousStock = product.stock;
+        const newStock = previousStock - item.quantity;
+
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: -item.quantity, totalSold: item.quantity }
+        });
+
+        await InventoryLog.create({
+          product: product._id,
+          type: 'sale',
+          quantity: -item.quantity,
+          previousStock,
+          newStock,
+          reason: `Order ${order.orderNumber} uncancelled`,
+          relatedOrder: order._id,
+          performedBy: req.user._id
+        });
+      }
+    }
+
+    // Restore order to pending
+    order.status = 'pending';
+    order.cancelledAt = undefined;
+    order.cancellationReason = '';
+    order.cancelledBy = undefined;
+    order.statusTimeline.push({
+      status: 'pending',
+      timestamp: new Date(),
+      updatedBy: req.user._id,
+      notes: 'Order uncancelled and restored to pending'
+    });
+
+    await order.save();
+
+    const updatedOrder = await Order.findById(order._id)
+      .populate('customer', 'name email phone')
+      .populate('items.product', 'name imageUrl');
 
     res.json({
       success: true,
@@ -490,7 +646,7 @@ export const getOrderStats = async (req, res, next) => {
 
     // Pending orders count (all time, need attention)
     const pendingCount = await Order.countDocuments({
-      status: { $in: ['pending', 'confirmed', 'packing', 'ready', 'out-for-delivery'] }
+      status: { $in: ['pending', 'confirmed', 'processing', 'shipped', 'reached-hub'] }
     });
 
     res.json({
@@ -508,6 +664,97 @@ export const getOrderStats = async (req, res, next) => {
         },
         pendingCount
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update order tracking checkboxes
+// @route   PUT /api/orders/:id/tracking
+// @access  Private/Staff+
+export const updateOrderTracking = async (req, res, next) => {
+  try {
+    const { field, checked } = req.body;
+
+    // Validate field name - ordered from first to last step
+    const trackingOrder = ['orderPicked', 'shipped', 'reachedHub', 'arrivedHub'];
+    if (!trackingOrder.includes(field)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid tracking field'
+      });
+    }
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Update the tracking field
+    order[field] = {
+      checked: checked,
+      checkedAt: checked ? new Date() : null,
+      checkedBy: checked ? req.user._id : null
+    };
+
+    // If unchecking, also uncheck all subsequent steps (cascade uncheck)
+    if (!checked) {
+      const fieldIndex = trackingOrder.indexOf(field);
+      for (let i = fieldIndex + 1; i < trackingOrder.length; i++) {
+        const subsequentField = trackingOrder[i];
+        if (order[subsequentField]?.checked) {
+          order[subsequentField] = {
+            checked: false,
+            checkedAt: null,
+            checkedBy: null
+          };
+        }
+      }
+    }
+
+    let statusChanged = false;
+    const derivedStatus = deriveStatusFromTracking(order);
+    if (order.status !== 'cancelled' && order.status !== derivedStatus) {
+      const currentStatusIndex = trackingStatusOrder.indexOf(order.status);
+      const derivedStatusIndex = trackingStatusOrder.indexOf(derivedStatus);
+
+      const isForwardMove = derivedStatusIndex > currentStatusIndex;
+      order.status = derivedStatus;
+      statusChanged = true;
+      pushStatusTimeline(
+        order,
+        derivedStatus,
+        req.user._id,
+        isForwardMove ? 'Auto-updated from tracking progress' : 'Auto-adjusted after tracking step update'
+      );
+    }
+
+    await order.save();
+
+    const updatedOrder = await Order.findById(order._id)
+      .populate('customer', 'name email phone')
+      .populate('items.product', 'name imageUrl')
+      .populate('orderPicked.checkedBy', 'name')
+      .populate('shipped.checkedBy', 'name')
+      .populate('reachedHub.checkedBy', 'name');
+
+    if (statusChanged) {
+      await sendOrderStatusEmail({
+        to: updatedOrder.customer?.email,
+        customerName: updatedOrder.customer?.name,
+        orderNumber: updatedOrder.orderNumber,
+        status: updatedOrder.status
+      });
+    }
+
+    res.json({
+      success: true,
+      order: updatedOrder
     });
   } catch (error) {
     next(error);

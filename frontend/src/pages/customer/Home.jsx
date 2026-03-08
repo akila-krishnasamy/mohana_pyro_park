@@ -4,6 +4,7 @@ import { ArrowRight, Sparkles, Truck, Shield, Gift, Star } from 'lucide-react';
 import { productsAPI, categoriesAPI } from '../../services/api';
 import ProductCard from '../../components/customer/ProductCard';
 import { PageLoader, ErrorMessage } from '../../components/common';
+import { useState } from 'react';
 
 const Home = () => {
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
@@ -117,6 +118,58 @@ const Home = () => {
                 <p className="text-sm text-gray-500 mt-1">{category.productCount} products</p>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Brands We Handle */}
+      <section className="py-16 bg-gray-50 border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900">Brands We Handle</h2>
+          </div>
+          
+          {/* Brands Marquee */}
+          <div className="relative overflow-hidden">
+            <div className="flex gap-16 items-center animate-marquee whitespace-nowrap">
+              {[
+                { name: 'Success', image: '/images/brands/brand1.png' },
+                { name: 'Da Mo', image: '/images/brands/brand2.png' },
+                { name: 'Lime Brand', image: '/images/brands/brand3.png' },
+                { name: 'Sonny', image: '/images/brands/brand4.png' },
+                { name: 'Star Vell', image: '/images/brands/brand5.png' },
+                { name: 'Spnka', image: '/images/brands/brand6.png' },
+                { name: 'Win Brand', image: '/images/brands/brand7.png' },
+              ].map((brand) => (
+                <div key={brand.name} className="flex-shrink-0">
+                  <img 
+                    src={brand.image} 
+                    alt={brand.name} 
+                    title={brand.name}
+                    className="h-28 w-auto object-contain"
+                  />
+                </div>
+              ))}
+              {/* Duplicate for seamless loop */}
+              {[
+                { name: 'Success', image: '/images/brands/brand1.png' },
+                { name: 'Da Mo', image: '/images/brands/brand2.png' },
+                { name: 'Lime Brand', image: '/images/brands/brand3.png' },
+                { name: 'Sonny', image: '/images/brands/brand4.png' },
+                { name: 'Star Vell', image: '/images/brands/brand5.png' },
+                { name: 'Spnka', image: '/images/brands/brand6.png' },
+                { name: 'Win Brand', image: '/images/brands/brand7.png' },
+              ].map((brand) => (
+                <div key={`dup-${brand.name}`} className="flex-shrink-0">
+                  <img 
+                    src={brand.image} 
+                    alt={brand.name} 
+                    title={brand.name}
+                    className="h-28 w-auto object-contain"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

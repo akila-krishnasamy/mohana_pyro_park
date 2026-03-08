@@ -66,6 +66,8 @@ const Dashboard = () => {
   const recentOrders = dashboard.recentOrders || [];
   const pendingOrders = dashboard.pendingOrders || 0;
   const lowStockCount = dashboard.lowStockCount || 0;
+  const totalProducts = dashboard.totalProducts || 0;
+  const totalCustomers = dashboard.totalCustomers || 0;
 
   // Calculate total stats from all-time sales
   const totalStats = salesAnalytics.summary || { totalRevenue: 0, totalOrders: 0 };
@@ -111,7 +113,7 @@ const Dashboard = () => {
     },
     {
       title: 'Products',
-      value: '140',
+      value: totalProducts,
       subValue: `Low stock: ${lowStockCount}`,
       change: 0,
       icon: Package,
@@ -120,7 +122,7 @@ const Dashboard = () => {
     {
       title: 'Avg Order Value',
       value: `₹${Math.round(totalStats.avgOrderValue || 0).toLocaleString()}`,
-      subValue: 'Per order average',
+      subValue: `Customers: ${totalCustomers}`,
       change: 0,
       icon: TrendingUp,
       color: 'bg-pink-500',

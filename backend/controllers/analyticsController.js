@@ -3,6 +3,7 @@ import Product from '../models/Product.js';
 import User from '../models/User.js';
 import Category from '../models/Category.js';
 import mongoose from 'mongoose';
+import { sendBulkOfferEmails } from '../services/emailService.js';
 
 // @desc    Get sales analytics
 // @route   GET /api/analytics/sales
@@ -515,6 +516,13 @@ export const getDashboardOverview = async (req, res, next) => {
       $expr: { $lte: ['$stock', '$lowStockThreshold'] }
     });
 
+    // Total active products count
+    const totalProducts = await Product.countDocuments({ isActive: true });
+
+    // Total registered users count
+    const totalUsers = await User.countDocuments();
+    const totalCustomers = await User.countDocuments({ role: 'customer' });
+
     // Recent orders
     const recentOrders = await Order.find()
       .populate('customer', 'name')
@@ -538,6 +546,9 @@ export const getDashboardOverview = async (req, res, next) => {
         revenueGrowth: parseFloat(revenueGrowth),
         pendingOrders,
         lowStockCount,
+        totalProducts,
+        totalUsers,
+        totalCustomers,
         recentOrders
       }
     });
@@ -887,6 +898,57 @@ export const getSalesDetailedAnalytics = async (req, res, next) => {
       avgOrderValue: Math.round(totalStats[0]?.avgOrderValue || 0),
       ordersByStatus,
       topProducts
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Send offer email to customers
+// @route   POST /api/analytics/offers/email
+// @access  Private/Manager+
+export const sendOfferEmails = async (req, res, next) => {
+  try {
+    const { subject, message, html, customerIds = [], sendToAll = false } = req.body;
+
+    if (!message && !html) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide message or html content'
+      });
+    }
+
+    let customers = [];
+
+    if (sendToAll) {
+      customers = await User.find({ role: 'customer', isActive: true }).select('name email');
+    } else {
+      if (!Array.isArray(customerIds) || customerIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide customerIds or set sendToAll=true'
+        });
+      }
+
+      customers = await User.find({
+        _id: { $in: customerIds },
+        role: 'customer',
+        isActive: true
+      }).select('name email');
+    }
+
+    const customersWithEmail = customers.filter((customer) => Boolean(customer.email));
+    const result = await sendBulkOfferEmails({
+      customers: customersWithEmail,
+      subject,
+      message,
+      html
+    });
+
+    res.json({
+      success: true,
+      message: 'Offer email processing completed',
+      ...result
     });
   } catch (error) {
     next(error);

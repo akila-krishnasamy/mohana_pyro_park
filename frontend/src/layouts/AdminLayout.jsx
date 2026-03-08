@@ -3,10 +3,13 @@ import { useState } from 'react';
 import {
   LayoutDashboard,
   Package,
+  Plus,
+  Percent,
   ShoppingCart,
   BarChart3,
   Users,
   Boxes,
+  ClipboardList,
   LogOut,
   Menu,
   X,
@@ -28,10 +31,13 @@ const AdminLayout = () => {
   };
 
   const navigation = [
-    { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, roles: ['staff', 'manager', 'owner'] },
+    { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, roles: ['manager', 'owner'] },
     { name: 'Orders', path: '/admin/orders', icon: ShoppingCart, roles: ['staff', 'manager', 'owner'] },
     { name: 'Inventory', path: '/admin/inventory', icon: Boxes, roles: ['staff', 'manager', 'owner'] },
+    { name: 'Stock', path: '/admin/stock', icon: ClipboardList, roles: ['staff', 'manager', 'owner'] },
     { name: 'Products', path: '/admin/products', icon: Package, roles: ['manager', 'owner'] },
+    { name: 'New Arrival', path: '/admin/new-arrival', icon: Plus, roles: ['manager', 'owner'] },
+    { name: 'Store Discount', path: '/admin/store-discount', icon: Percent, roles: ['manager', 'owner'] },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart3, roles: ['owner'] },
     { name: 'Users', path: '/admin/users', icon: Users, roles: ['manager', 'owner'] },
   ];

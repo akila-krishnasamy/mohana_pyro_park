@@ -5,6 +5,8 @@ import {
   getOrder,
   getAllOrders,
   updateOrderStatus,
+  updateOrderTracking,
+  uncancelOrder,
   assignDelivery,
   getOrderStats
 } from '../controllers/orderController.js';
@@ -20,6 +22,8 @@ router.get('/my-orders', protect, getMyOrders);
 router.get('/', protect, isStaffOrHigher, getAllOrders);
 router.get('/stats', protect, isStaffOrHigher, getOrderStats);
 router.put('/:id/status', protect, isStaffOrHigher, updateOrderStatus);
+router.put('/:id/tracking', protect, isStaffOrHigher, updateOrderTracking);
+router.put('/:id/uncancel', protect, isStaffOrHigher, uncancelOrder);
 
 // Manager routes
 router.put('/:id/assign-delivery', protect, isManagerOrOwner, assignDelivery);

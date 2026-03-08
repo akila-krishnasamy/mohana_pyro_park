@@ -18,13 +18,18 @@ import Checkout from './pages/customer/Checkout';
 import MyOrders from './pages/customer/MyOrders';
 import OrderDetail from './pages/customer/OrderDetail';
 import Profile from './pages/customer/Profile';
+import QuickPurchase from './pages/customer/QuickPurchase';
+import PaymentMethods from './pages/customer/PaymentMethods';
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
 import AdminOrders from './pages/admin/Orders';
 import AdminOrderDetail from './pages/admin/OrderDetail';
 import Inventory from './pages/admin/Inventory';
+import Stock from './pages/admin/Stock';
 import AdminProducts from './pages/admin/Products';
+import NewArrival from './pages/admin/NewArrival';
+import StoreDiscount from './pages/admin/StoreDiscount';
 import Analytics from './pages/admin/Analytics';
 import Users from './pages/admin/Users';
 
@@ -54,7 +59,9 @@ const CustomerOnlyRoute = ({ children, requireAuth = false }) => {
 
   // If logged in but not a customer, redirect to admin
   if (isAuthenticated && ['staff', 'manager', 'owner'].includes(user?.role)) {
-    return <Navigate to="/admin" replace />;
+    // Staff goes to orders, managers/owners go to dashboard
+    const adminPath = user?.role === 'staff' ? '/admin/orders' : '/admin';
+    return <Navigate to={adminPath} replace />;
   }
 
   return children;
@@ -66,7 +73,8 @@ const PublicRoute = ({ children }) => {
   if (isAuthenticated) {
     // Redirect to appropriate dashboard based on role
     if (['staff', 'manager', 'owner'].includes(user?.role)) {
-      return <Navigate to="/admin" replace />;
+      const adminPath = user?.role === 'staff' ? '/admin/orders' : '/admin';
+      return <Navigate to={adminPath} replace />;
     }
     return <Navigate to="/" replace />;
   }
@@ -94,6 +102,12 @@ function App() {
         <Route index element={<Home />} />
         <Route path="products" element={<Products />} />
         <Route path="products/:id" element={<ProductDetail />} />
+        <Route path="payment-methods" element={<PaymentMethods />} />
+        <Route path="quick-purchase" element={
+          <CustomerOnlyRoute>
+            <QuickPurchase />
+          </CustomerOnlyRoute>
+        } />
         <Route path="cart" element={
           <CustomerOnlyRoute>
             <Cart />
@@ -127,13 +141,28 @@ function App() {
           <AdminLayout />
         </ProtectedRoute>
       }>
-        <Route index element={<Dashboard />} />
+        <Route index element={
+          <ProtectedRoute allowedRoles={['manager', 'owner']}>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="orders/:id" element={<AdminOrderDetail />} />
         <Route path="inventory" element={<Inventory />} />
+        <Route path="stock" element={<Stock />} />
         <Route path="products" element={
           <ProtectedRoute allowedRoles={['manager', 'owner']}>
             <AdminProducts />
+          </ProtectedRoute>
+        } />
+        <Route path="new-arrival" element={
+          <ProtectedRoute allowedRoles={['manager', 'owner']}>
+            <NewArrival />
+          </ProtectedRoute>
+        } />
+        <Route path="store-discount" element={
+          <ProtectedRoute allowedRoles={['manager', 'owner']}>
+            <StoreDiscount />
           </ProtectedRoute>
         } />
         <Route path="analytics" element={

@@ -12,7 +12,8 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Check
 } from 'lucide-react';
 import { ordersAPI } from '../../services/api';
 import { LoadingSpinner, ErrorMessage, StatusBadge } from '../../components/common';
@@ -61,6 +62,8 @@ const OrderDetail = () => {
         return <AlertCircle className="w-5 h-5 text-blue-500" />;
       case 'shipped':
         return <Truck className="w-5 h-5 text-purple-500" />;
+      case 'reached-hub':
+        return <CheckCircle className="w-5 h-5 text-orange-500" />;
       case 'delivered':
         return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'cancelled':
@@ -75,11 +78,11 @@ const OrderDetail = () => {
     { status: 'confirmed', label: 'Confirmed' },
     { status: 'processing', label: 'Processing' },
     { status: 'shipped', label: 'Shipped' },
-    { status: 'delivered', label: 'Delivered' },
+    { status: 'reached-hub', label: 'Reached Hub' },
   ];
 
   const getTimelineStatus = (stepStatus) => {
-    const statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
+    const statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'reached-hub'];
     const currentIndex = statusOrder.indexOf(order?.status);
     const stepIndex = statusOrder.indexOf(stepStatus);
 
@@ -143,59 +146,108 @@ const OrderDetail = () => {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Order Timeline */}
+          {/* Order Status / Tracking Progress */}
           <div className="card p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6">Order Status</h2>
 
             {order.status === 'cancelled' ? (
-              <div className="flex items-center gap-4 p-4 bg-red-50 rounded-lg">
-                <XCircle className="w-8 h-8 text-red-500" />
-                <div>
-                  <p className="font-medium text-red-700">Order Cancelled</p>
-                  <p className="text-sm text-red-600 mt-1">
-                    This order was cancelled on {formatDate(order.updatedAt)}
-                  </p>
+              <div className="p-4 bg-red-50 rounded-lg space-y-3">
+                <div className="flex items-center gap-4">
+                  <XCircle className="w-8 h-8 text-red-500" />
+                  <div>
+                    <p className="font-medium text-red-700">Order Cancelled</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      This order was cancelled on {formatDate(order.cancelledAt || order.updatedAt)}
+                    </p>
+                  </div>
                 </div>
+                {order.cancellationReason && (
+                  <div className="mt-3 pt-3 border-t border-red-100">
+                    <p className="text-sm font-medium text-red-700">Reason:</p>
+                    <p className="text-sm text-red-600 mt-1">{order.cancellationReason}</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="relative">
                 <div className="flex justify-between">
-                  {orderTimeline.map((step, index) => {
-                    const status = getTimelineStatus(step.status);
-                    return (
-                      <div key={step.status} className="flex flex-col items-center relative z-10">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            status === 'completed'
-                              ? 'bg-green-500 text-white'
-                              : status === 'current'
-                              ? 'bg-primary-500 text-white'
-                              : 'bg-gray-200 text-gray-500'
-                          }`}
-                        >
-                          {status === 'completed' ? (
-                            <CheckCircle className="w-5 h-5" />
-                          ) : (
-                            getStatusIcon(step.status)
-                          )}
-                        </div>
-                        <p
-                          className={`text-xs mt-2 text-center ${
-                            status === 'upcoming' ? 'text-gray-400' : 'text-gray-700 font-medium'
-                          }`}
-                        >
-                          {step.label}
-                        </p>
-                      </div>
-                    );
-                  })}
+                  {/* Order Placed */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-500 text-white">
+                      <CheckCircle className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs mt-2 text-center text-gray-700 font-medium">Order Placed</p>
+                  </div>
+
+                  {/* Confirmed (Order Confirm) */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      order.orderPicked?.checked 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {order.orderPicked?.checked ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                    </div>
+                    <p className={`text-xs mt-2 text-center ${order.orderPicked?.checked ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                      Confirmed
+                    </p>
+                  </div>
+
+                  {/* Processing (Pickup) */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      order.shipped?.checked 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {order.shipped?.checked ? <CheckCircle className="w-5 h-5" /> : <Package className="w-5 h-5" />}
+                    </div>
+                    <p className={`text-xs mt-2 text-center ${order.shipped?.checked ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                      Processing
+                    </p>
+                  </div>
+
+                  {/* Shipped (Dispatch) */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      order.reachedHub?.checked 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {order.reachedHub?.checked ? <CheckCircle className="w-5 h-5" /> : <Truck className="w-5 h-5" />}
+                    </div>
+                    <p className={`text-xs mt-2 text-center ${order.reachedHub?.checked ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                      Shipped
+                    </p>
+                  </div>
+
+                  {/* Reached Hub */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      order.arrivedHub?.checked
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {order.arrivedHub?.checked ? <CheckCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                    </div>
+                    <p className={`text-xs mt-2 text-center ${order.arrivedHub?.checked ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                      Reached Hub
+                    </p>
+                  </div>
                 </div>
                 {/* Progress Line */}
                 <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-0" style={{ margin: '0 40px' }}>
                   <div
                     className="h-full bg-green-500 transition-all"
                     style={{
-                      width: `${(orderTimeline.findIndex(s => s.status === order.status) / (orderTimeline.length - 1)) * 100}%`,
+                      width: `${(() => {
+                        let progress = 0;
+                        if (order.orderPicked?.checked) progress = 1;
+                        if (order.shipped?.checked) progress = 2;
+                        if (order.reachedHub?.checked) progress = 3;
+                        if (order.arrivedHub?.checked) progress = 4;
+                        return (progress / 4) * 100;
+                      })()}%`,
                     }}
                   />
                 </div>
@@ -211,22 +263,26 @@ const OrderDetail = () => {
             <div className="space-y-4">
               {order.items?.map((item, index) => (
                 <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-16 h-16 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-2xl">🎆</span>
+                  <div className="w-16 h-16 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {item.product?.imageUrl && item.product.imageUrl !== '/images/default-cracker.png' ? (
+                      <img src={item.product.imageUrl} alt={item.productName || item.product?.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl">🎆</span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <Link
                       to={`/products/${item.product?._id}`}
                       className="font-medium text-gray-900 hover:text-primary-600 line-clamp-1"
                     >
-                      {item.product?.name || 'Product'}
+                      {item.productName || item.product?.name || 'Product'}
                     </Link>
                     <p className="text-sm text-gray-500 mt-1">
-                      ₹{item.price?.toLocaleString()} × {item.quantity}
+                      ₹{(item.unitPrice || item.price || 0).toLocaleString()} × {item.quantity}
                     </p>
                   </div>
                   <p className="font-semibold text-gray-900">
-                    ₹{((item.price || 0) * item.quantity).toLocaleString()}
+                    ₹{(item.totalPrice || (item.unitPrice || item.price || 0) * item.quantity).toLocaleString()}
                   </p>
                 </div>
               ))}

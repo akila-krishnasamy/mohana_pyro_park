@@ -15,7 +15,8 @@ import {
   Clock,
   XCircle,
   AlertCircle,
-  Printer
+  Printer,
+  Check
 } from 'lucide-react';
 import { ordersAPI } from '../../services/api';
 import { LoadingSpinner, ErrorMessage, StatusBadge } from '../../components/common';
@@ -43,6 +44,22 @@ const AdminOrderDetail = () => {
     },
   });
 
+  const updateTrackingMutation = useMutation({
+    mutationFn: ({ field, checked }) => ordersAPI.updateTracking(id, field, checked),
+    onSuccess: () => {
+      toast.success('Tracking updated');
+      queryClient.invalidateQueries(['adminOrder', id]);
+      queryClient.invalidateQueries(['adminOrders']);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update tracking');
+    },
+  });
+
+  const handleTrackingChange = (field, currentValue) => {
+    updateTrackingMutation.mutate({ field, checked: !currentValue });
+  };
+
   const order = data?.order;
 
   const formatDate = (date) => {
@@ -60,6 +77,7 @@ const AdminOrderDetail = () => {
     { value: 'confirmed', label: 'Confirmed', color: 'bg-blue-100 text-blue-700' },
     { value: 'processing', label: 'Processing', color: 'bg-indigo-100 text-indigo-700' },
     { value: 'shipped', label: 'Shipped', color: 'bg-purple-100 text-purple-700' },
+    { value: 'reached-hub', label: 'Reached Hub', color: 'bg-orange-100 text-orange-700' },
     { value: 'delivered', label: 'Delivered', color: 'bg-green-100 text-green-700' },
     { value: 'cancelled', label: 'Cancelled', color: 'bg-red-100 text-red-700' },
   ];
@@ -126,7 +144,7 @@ const AdminOrderDetail = () => {
           </div>
 
           {/* Status Update */}
-          {order.status !== 'cancelled' && order.status !== 'delivered' && (
+          {order.status !== 'cancelled' && order.status !== 'delivered' && order.status !== 'picked-up' && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Update Status:</span>
               <select
@@ -152,51 +170,103 @@ const AdminOrderDetail = () => {
             <h2 className="text-lg font-semibold text-gray-900 mb-6">Order Status</h2>
 
             {order.status === 'cancelled' ? (
-              <div className="flex items-center gap-4 p-4 bg-red-50 rounded-lg">
-                <XCircle className="w-8 h-8 text-red-500" />
-                <div>
-                  <p className="font-medium text-red-700">Order Cancelled</p>
-                  <p className="text-sm text-red-600 mt-1">
-                    This order was cancelled on {formatDate(order.updatedAt)}
-                  </p>
+              <div className="p-4 bg-red-50 rounded-lg space-y-3">
+                <div className="flex items-center gap-4">
+                  <XCircle className="w-8 h-8 text-red-500" />
+                  <div>
+                    <p className="font-medium text-red-700">Order Cancelled</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      This order was cancelled on {formatDate(order.cancelledAt || order.updatedAt)}
+                    </p>
+                  </div>
                 </div>
+                {order.cancellationReason && (
+                  <div className="mt-3 pt-3 border-t border-red-100">
+                    <p className="text-sm font-medium text-red-700">Reason:</p>
+                    <p className="text-sm text-red-600 mt-1">{order.cancellationReason}</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="relative">
                 <div className="flex justify-between">
-                  {orderTimeline.map((step) => {
-                    const status = getTimelineStatus(step.status);
-                    const Icon = step.icon;
-                    return (
-                      <div key={step.status} className="flex flex-col items-center relative z-10">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            status === 'completed'
-                              ? 'bg-green-500 text-white'
-                              : status === 'current'
-                              ? 'bg-primary-500 text-white'
-                              : 'bg-gray-200 text-gray-500'
-                          }`}
-                        >
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <p
-                          className={`text-xs mt-2 text-center ${
-                            status === 'upcoming' ? 'text-gray-400' : 'text-gray-700 font-medium'
-                          }`}
-                        >
-                          {step.label}
-                        </p>
-                      </div>
-                    );
-                  })}
+                  {/* Order Placed */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-500 text-white">
+                      <CheckCircle className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs mt-2 text-center text-gray-700 font-medium">Order Placed</p>
+                  </div>
+
+                  {/* Confirmed */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      order.orderPicked?.checked 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {order.orderPicked?.checked ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                    </div>
+                    <p className={`text-xs mt-2 text-center ${order.orderPicked?.checked ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                      Confirmed
+                    </p>
+                  </div>
+
+                  {/* Processing */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      order.shipped?.checked 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {order.shipped?.checked ? <CheckCircle className="w-5 h-5" /> : <Package className="w-5 h-5" />}
+                    </div>
+                    <p className={`text-xs mt-2 text-center ${order.shipped?.checked ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                      Processing
+                    </p>
+                  </div>
+
+                  {/* Shipped */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      order.reachedHub?.checked 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {order.reachedHub?.checked ? <CheckCircle className="w-5 h-5" /> : <Truck className="w-5 h-5" />}
+                    </div>
+                    <p className={`text-xs mt-2 text-center ${order.reachedHub?.checked ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                      Shipped
+                    </p>
+                  </div>
+
+                  {/* Reached Hub */}
+                  <div className="flex flex-col items-center relative z-10">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      order.arrivedHub?.checked
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      <CheckCircle className="w-5 h-5" />
+                    </div>
+                    <p className={`text-xs mt-2 text-center ${order.arrivedHub?.checked ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                      Reached Hub
+                    </p>
+                  </div>
                 </div>
                 {/* Progress Line */}
                 <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-0" style={{ margin: '0 40px' }}>
                   <div
                     className="h-full bg-green-500 transition-all"
                     style={{
-                      width: `${(orderTimeline.findIndex(s => s.status === order.status) / (orderTimeline.length - 1)) * 100}%`,
+                      width: `${(() => {
+                        let progress = 0;
+                        if (order.orderPicked?.checked) progress = 1;
+                        if (order.shipped?.checked) progress = 2;
+                        if (order.reachedHub?.checked) progress = 3;
+                        if (order.arrivedHub?.checked) progress = 4;
+                        return (progress / 4) * 100;
+                      })()}%`,
                     }}
                   />
                 </div>
@@ -224,23 +294,27 @@ const AdminOrderDetail = () => {
                     <tr key={index}>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-xl">🎆</span>
+                          <div className="w-12 h-12 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {item.product?.imageUrl && item.product.imageUrl !== '/images/default-cracker.png' ? (
+                              <img src={item.product.imageUrl} alt={item.productName || item.product?.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xl">🎆</span>
+                            )}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{item.product?.name || 'Product'}</p>
+                            <p className="font-medium text-gray-900">{item.productName || item.product?.name || 'Product'}</p>
                             <p className="text-xs text-gray-500">{item.product?.sku}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-4 text-center text-gray-600">
-                        ₹{item.price?.toLocaleString()}
+                        ₹{(item.unitPrice || item.price || 0).toLocaleString()}
                       </td>
                       <td className="px-4 py-4 text-center text-gray-600">
                         {item.quantity}
                       </td>
                       <td className="px-4 py-4 text-right font-medium text-gray-900">
-                        ₹{((item.price || 0) * item.quantity).toLocaleString()}
+                        ₹{(item.totalPrice || (item.unitPrice || item.price || 0) * item.quantity).toLocaleString()}
                       </td>
                     </tr>
                   ))}
@@ -258,16 +332,16 @@ const AdminOrderDetail = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <User className="w-5 h-5 text-gray-400" />
-                <p className="text-gray-900">{order.user?.name}</p>
+                <p className="text-gray-900">{order.customer?.name || 'N/A'}</p>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-gray-400" />
-                <p className="text-gray-900">{order.user?.email}</p>
+                <p className="text-gray-900">{order.customer?.email || 'N/A'}</p>
               </div>
-              {order.user?.phone && (
+              {order.customer?.phone && (
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-gray-400" />
-                  <p className="text-gray-900">{order.user.phone}</p>
+                  <p className="text-gray-900">{order.customer.phone}</p>
                 </div>
               )}
             </div>
@@ -354,6 +428,125 @@ const AdminOrderDetail = () => {
                 }`}>
                   {order.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Staff Tracking */}
+          <div className="card p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Staff Tracking</h2>
+            <div className="space-y-4">
+              {/* Order Picked */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleTrackingChange('orderPicked', order.orderPicked?.checked)}
+                    disabled={updateTrackingMutation.isPending}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                      order.orderPicked?.checked 
+                        ? 'bg-green-500 border-green-500 text-white' 
+                        : 'border-gray-300 hover:border-green-400'
+                    }`}
+                  >
+                    {order.orderPicked?.checked && <Check className="w-4 h-4" />}
+                  </button>
+                  <span className="font-medium text-gray-700">Order Confirm</span>
+                </div>
+                {order.orderPicked?.checked && order.orderPicked?.checkedAt && (
+                  <span className="text-xs text-gray-500">
+                    {new Date(order.orderPicked.checkedAt).toLocaleString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Pickup */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleTrackingChange('shipped', order.shipped?.checked)}
+                    disabled={updateTrackingMutation.isPending}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                      order.shipped?.checked 
+                        ? 'bg-blue-500 border-blue-500 text-white' 
+                        : 'border-gray-300 hover:border-blue-400'
+                    }`}
+                  >
+                    {order.shipped?.checked && <Check className="w-4 h-4" />}
+                  </button>
+                  <span className="font-medium text-gray-700">Pickup</span>
+                </div>
+                {order.shipped?.checked && order.shipped?.checkedAt && (
+                  <span className="text-xs text-gray-500">
+                    {new Date(order.shipped.checkedAt).toLocaleString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Dispatch */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleTrackingChange('reachedHub', order.reachedHub?.checked)}
+                    disabled={updateTrackingMutation.isPending}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                      order.reachedHub?.checked 
+                        ? 'bg-purple-500 border-purple-500 text-white' 
+                        : 'border-gray-300 hover:border-purple-400'
+                    }`}
+                  >
+                    {order.reachedHub?.checked && <Check className="w-4 h-4" />}
+                  </button>
+                  <span className="font-medium text-gray-700">Dispatch</span>
+                </div>
+                {order.reachedHub?.checked && order.reachedHub?.checkedAt && (
+                  <span className="text-xs text-gray-500">
+                    {new Date(order.reachedHub.checkedAt).toLocaleString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Reached Hub */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleTrackingChange('arrivedHub', order.arrivedHub?.checked)}
+                    disabled={updateTrackingMutation.isPending}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                      order.arrivedHub?.checked 
+                        ? 'bg-orange-500 border-orange-500 text-white' 
+                        : 'border-gray-300 hover:border-orange-400'
+                    }`}
+                  >
+                    {order.arrivedHub?.checked && <Check className="w-4 h-4" />}
+                  </button>
+                  <span className="font-medium text-gray-700">Reached Hub</span>
+                </div>
+                {order.arrivedHub?.checked && order.arrivedHub?.checkedAt && (
+                  <span className="text-xs text-gray-500">
+                    {new Date(order.arrivedHub.checkedAt).toLocaleString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Cancelled */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                      order.status === 'cancelled' 
+                        ? 'bg-red-500 border-red-500 text-white' 
+                        : 'border-gray-300'
+                    }`}
+                  >
+                    {order.status === 'cancelled' && <Check className="w-4 h-4" />}
+                  </div>
+                  <span className={`font-medium ${order.status === 'cancelled' ? 'text-red-600' : 'text-gray-700'}`}>Cancelled</span>
+                </div>
+                {order.status === 'cancelled' && order.cancelledAt && (
+                  <span className="text-xs text-gray-500">
+                    {new Date(order.cancelledAt).toLocaleString()}
+                  </span>
+                )}
               </div>
             </div>
           </div>

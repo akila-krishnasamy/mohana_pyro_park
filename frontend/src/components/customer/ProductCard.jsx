@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Eye } from 'lucide-react';
 import { useCartStore, useAuthStore } from '../../store';
@@ -6,9 +7,33 @@ import toast from 'react-hot-toast';
 const ProductCard = ({ product }) => {
   const { addItem } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
+  const [imageError, setImageError] = useState(false);
 
   // Only customers (or unauthenticated users) can shop
   const canShop = !isAuthenticated || user?.role === 'customer';
+
+  // Get image URL - try product imageUrl or match by name
+  const getProductImage = () => {
+    // If product has a valid imageUrl (local path), use it
+    if (product.imageUrl && product.imageUrl.startsWith('/images/products/')) {
+      return product.imageUrl;
+    }
+    
+    // Try to match product name to local image file
+    const productName = product.name?.toLowerCase();
+    if (productName?.includes('100 shot')) return '/images/products/100 shot.webp';
+    if (productName?.includes('200 shot')) return '/images/products/200 shot.webp';
+    if (productName?.includes('265 shot')) return '/images/products/265 shot.webp';
+    
+    // Return the imageUrl if it exists (external URL)
+    if (product.imageUrl && product.imageUrl !== '/images/default-cracker.png') {
+      return product.imageUrl;
+    }
+    
+    return null;
+  };
+
+  const productImage = getProductImage();
 
   const effectivePrice = product.discountPrice || product.price;
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
@@ -39,7 +64,16 @@ const ProductCard = ({ product }) => {
       {/* Image */}
       <div className="relative aspect-square bg-gradient-subtle overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-6xl">🎆</div>
+          {productImage && !imageError ? (
+            <img 
+              src={productImage} 
+              alt={product.name} 
+              className="w-full h-full object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="text-6xl">🎆</div>
+          )}
         </div>
         
         {/* Badges */}

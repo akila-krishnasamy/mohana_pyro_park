@@ -12,11 +12,11 @@ const router = express.Router();
 
 // Staff routes
 router.get('/', protect, isStaffOrHigher, getInventory);
+router.post('/:productId/adjust', protect, isStaffOrHigher, adjustStock);
 
 // Manager routes
-router.get('/logs', protect, isManagerOrOwner, getInventoryLogs);
+router.get('/logs', protect, isStaffOrHigher, getInventoryLogs);
 router.get('/summary', protect, isManagerOrOwner, getInventorySummary);
 router.post('/:productId/restock', protect, isManagerOrOwner, restockProduct);
-router.post('/:productId/adjust', protect, isManagerOrOwner, adjustStock);
 
 export default router;

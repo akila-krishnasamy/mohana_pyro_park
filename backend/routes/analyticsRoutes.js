@@ -9,7 +9,8 @@ import {
   getRevenueAnalytics,
   getInventoryAnalytics,
   getCustomerAnalytics,
-  getSalesDetailedAnalytics
+  getSalesDetailedAnalytics,
+  sendOfferEmails
 } from '../controllers/analyticsController.js';
 import { protect, isOwner, isManagerOrOwner, isStaff } from '../middleware/auth.js';
 
@@ -23,6 +24,7 @@ router.get('/top-products', protect, isStaff, getTopProducts);
 router.get('/revenue', protect, isStaff, getRevenueAnalytics);
 router.get('/inventory', protect, isStaff, getInventoryAnalytics);
 router.get('/customers', protect, isStaff, getCustomerAnalytics);
+router.post('/offers/email', protect, isManagerOrOwner, sendOfferEmails);
 
 // Owner-only routes (detailed analytics)
 router.get('/festival', protect, isOwner, getFestivalAnalytics);

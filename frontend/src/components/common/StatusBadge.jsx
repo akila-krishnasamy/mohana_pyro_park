@@ -3,12 +3,17 @@ const StatusBadge = ({ status }) => {
     // Order statuses
     pending: { label: 'Pending', className: 'badge-warning' },
     confirmed: { label: 'Confirmed', className: 'badge-info' },
-    packing: { label: 'Packing', className: 'badge-info' },
-    ready: { label: 'Ready', className: 'badge-primary' },
-    'out-for-delivery': { label: 'Out for Delivery', className: 'badge-info' },
+    processing: { label: 'Processing', className: 'badge-info' },
+    shipped: { label: 'Shipped', className: 'badge-primary' },
+    'reached-hub': { label: 'Reached Hub', className: 'badge-primary' },
     delivered: { label: 'Delivered', className: 'badge-success' },
     'picked-up': { label: 'Picked Up', className: 'badge-success' },
     cancelled: { label: 'Cancelled', className: 'badge-danger' },
+    
+    // Legacy statuses (for backwards compatibility)
+    packing: { label: 'Packing', className: 'badge-info' },
+    ready: { label: 'Ready', className: 'badge-primary' },
+    'out-for-delivery': { label: 'Out for Delivery', className: 'badge-info' },
     
     // Payment statuses
     paid: { label: 'Paid', className: 'badge-success' },

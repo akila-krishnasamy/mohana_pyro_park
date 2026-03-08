@@ -55,19 +55,19 @@ const Checkout = () => {
 
     const orderData = {
       items: items.map(item => ({
-        product: item.product._id,
+        productId: item.product._id,
         quantity: item.quantity,
         price: item.product.discountPrice || item.product.price,
       })),
+      deliveryType: deliveryMethod,
       deliveryAddress: deliveryMethod === 'delivery' ? {
         street: formData.street,
         city: formData.city,
         state: formData.state,
         pincode: formData.pincode,
-        phone: formData.phone,
       } : null,
-      paymentMethod,
-      notes: formData.notes,
+      paymentMethod: paymentMethod === 'cod' ? 'cash' : paymentMethod,
+      customerNotes: formData.notes,
     };
 
     createOrderMutation.mutate(orderData);
@@ -317,8 +317,12 @@ const Checkout = () => {
                   const price = item.product.discountPrice || item.product.price;
                   return (
                     <div key={item.product._id} className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-xl">🎆</span>
+                      <div className="w-12 h-12 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {item.product.imageUrl && item.product.imageUrl !== '/images/default-cracker.png' ? (
+                          <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl">🎆</span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 line-clamp-1">

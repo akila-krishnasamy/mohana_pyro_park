@@ -102,9 +102,10 @@ const Inventory = () => {
     });
   };
 
-  const getStockStatus = (stock, minStock) => {
+  const getStockStatus = (stock, lowStockThreshold) => {
+    const threshold = lowStockThreshold || 10;
     if (stock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-700' };
-    if (stock <= minStock) return { label: 'Low Stock', color: 'bg-amber-100 text-amber-700' };
+    if (stock <= threshold) return { label: 'Low Stock', color: 'bg-amber-100 text-amber-700' };
     return { label: 'In Stock', color: 'bg-green-100 text-green-700' };
   };
 
@@ -195,13 +196,17 @@ const Inventory = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredProducts.map((product) => {
-                      const status = getStockStatus(product.stock, product.minStock);
+                      const status = getStockStatus(product.stock, product.lowStockThreshold);
                       return (
                         <tr key={product._id} className="hover:bg-gray-50">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-subtle rounded-lg flex items-center justify-center">
-                                <span className="text-lg">🎆</span>
+                              <div className="w-10 h-10 bg-gradient-subtle rounded-lg flex items-center justify-center overflow-hidden">
+                                {product.imageUrl && product.imageUrl !== '/images/default-cracker.png' ? (
+                                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-lg">🎆</span>
+                                )}
                               </div>
                               <div>
                                 <p className="font-medium text-gray-900 line-clamp-1">{product.name}</p>
@@ -215,13 +220,13 @@ const Inventory = () => {
                           <td className="px-6 py-4 text-center">
                             <span className={`text-lg font-semibold ${
                               product.stock === 0 ? 'text-red-600' : 
-                              product.stock <= product.minStock ? 'text-amber-600' : 'text-gray-900'
+                              product.stock <= (product.lowStockThreshold || 10) ? 'text-amber-600' : 'text-gray-900'
                             }`}>
                               {product.stock}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-center text-gray-600">
-                            {product.minStock}
+                            {product.lowStockThreshold || 10}
                           </td>
                           <td className="px-6 py-4 text-center">
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${status.color}`}>
@@ -301,10 +306,9 @@ const Inventory = () => {
                 {logs.map((log) => (
                   <div key={log._id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className={`p-1.5 rounded-lg ${
-                      log.type === 'in' ? 'bg-green-100' : 
-                      log.type === 'out' ? 'bg-red-100' : 'bg-blue-100'
+                      log.quantity > 0 ? 'bg-green-100' : 'bg-red-100'
                     }`}>
-                      {log.type === 'in' ? (
+                      {log.quantity > 0 ? (
                         <TrendingUp className="w-4 h-4 text-green-600" />
                       ) : (
                         <TrendingDown className="w-4 h-4 text-red-600" />
@@ -315,7 +319,7 @@ const Inventory = () => {
                         {log.product?.name}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {log.type === 'in' ? '+' : '-'}{Math.abs(log.quantity)} units
+                        {log.quantity > 0 ? '+' : ''}{log.quantity} units
                       </p>
                       <p className="text-xs text-gray-400 mt-1">{formatDate(log.createdAt)}</p>
                     </div>

@@ -119,22 +119,9 @@ export const restockProduct = async (req, res, next) => {
 // @access  Private/Manager+
 export const adjustStock = async (req, res, next) => {
   try {
-    const { newStock, reason } = req.body;
+    const { adjustment, newStock, reason } = req.body;
 
-    if (newStock === undefined || newStock < 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'New stock must be a non-negative number'
-      });
-    }
-
-    if (!reason) {
-      return res.status(400).json({
-        success: false,
-        message: 'Reason is required for stock adjustment'
-      });
-    }
-
+    // Support both 'adjustment' (change amount) and 'newStock' (absolute value)
     const product = await Product.findById(req.params.productId);
 
     if (!product) {
@@ -145,18 +132,55 @@ export const adjustStock = async (req, res, next) => {
     }
 
     const previousStock = product.stock;
-    const quantityChange = newStock - previousStock;
-    product.stock = newStock;
+    let finalStock;
+    let quantityChange;
+
+    if (adjustment !== undefined) {
+      // Using adjustment (e.g., +10 or -5)
+      quantityChange = parseInt(adjustment);
+      if (isNaN(quantityChange) || quantityChange === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Adjustment must be a non-zero number'
+        });
+      }
+      finalStock = previousStock + quantityChange;
+    } else if (newStock !== undefined) {
+      // Using absolute newStock value
+      finalStock = parseInt(newStock);
+      if (isNaN(finalStock) || finalStock < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'New stock must be a non-negative number'
+        });
+      }
+      quantityChange = finalStock - previousStock;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Either adjustment or newStock is required'
+      });
+    }
+
+    if (finalStock < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stock cannot be negative'
+      });
+    }
+
+    product.stock = finalStock;
     await product.save();
 
     // Log inventory change
+    const logType = quantityChange > 0 ? 'restock' : 'adjustment';
     await InventoryLog.create({
       product: product._id,
-      type: 'adjustment',
+      type: logType,
       quantity: quantityChange,
       previousStock,
       newStock: product.stock,
-      reason,
+      reason: reason || (quantityChange > 0 ? 'Stock added' : 'Stock removed'),
       performedBy: req.user._id
     });
 

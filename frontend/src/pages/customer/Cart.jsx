@@ -50,8 +50,12 @@ const Cart = () => {
               <div key={item.product._id} className="card p-4 sm:p-6">
                 <div className="flex gap-4">
                   {/* Product Image */}
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-4xl">🎆</span>
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {item.product.imageUrl && item.product.imageUrl !== '/images/default-cracker.png' ? (
+                      <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-4xl">🎆</span>
+                    )}
                   </div>
 
                   {/* Product Details */}

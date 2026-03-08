@@ -39,6 +39,8 @@ const CustomerNavbar = () => {
   const navLinks = [
     { label: 'Home', path: '/' },
     { label: 'Products', path: '/products' },
+    { label: 'Quick Purchase', path: '/quick-purchase' },
+    { label: 'Payment Methods', path: '/payment-methods' },
   ];
 
   return (

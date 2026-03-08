@@ -4,7 +4,7 @@ import User from '../models/User.js';
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d'
+    expiresIn: process.env.JWT_EXPIRE || '30d'
   });
 };
 
@@ -15,8 +15,16 @@ export const register = async (req, res, next) => {
   try {
     const { name, email, password, phone, address } = req.body;
 
+    // Validate required fields
+    if (!name || !email || !password || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, email, password, and phone'
+      });
+    }
+
     // Check if user exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -24,13 +32,27 @@ export const register = async (req, res, next) => {
       });
     }
 
+    // Check if phone exists
+    const existingPhone = await User.findOne({ phone });
+    if (existingPhone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number already registered'
+      });
+    }
+
     // Create user
     const user = await User.create({
       name,
-      email,
+      email: email.toLowerCase(),
       password,
       phone,
-      address,
+      address: address || {
+        street: '',
+        city: '',
+        state: 'Tamil Nadu',
+        pincode: ''
+      },
       role: 'customer' // Default role
     });
 
@@ -49,6 +71,7 @@ export const register = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('Registration error:', error);
     next(error);
   }
 };
@@ -69,7 +92,7 @@ export const login = async (req, res, next) => {
     }
 
     // Find user with password field
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
     if (!user) {
       return res.status(401).json({

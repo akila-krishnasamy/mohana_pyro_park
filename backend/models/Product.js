@@ -25,6 +25,14 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  discountStartsAt: {
+    type: Date,
+    default: null
+  },
+  discountEndsAt: {
+    type: Date,
+    default: null
+  },
   unit: {
     type: String,
     enum: ['piece', 'box', 'pack', 'dozen'],

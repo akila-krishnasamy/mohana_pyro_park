@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Search, 
@@ -22,6 +22,9 @@ const AdminProducts = () => {
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [failedImages, setFailedImages] = useState({});
   const limit = 15;
 
   const initialFormState = {
@@ -31,9 +34,8 @@ const AdminProducts = () => {
     price: '',
     discountPrice: '',
     stock: '',
-    minStock: '10',
     unit: 'piece',
-    safetyLevel: 'medium',
+    itemsPerUnit: '1',
     isActive: true,
   };
 
@@ -97,6 +99,42 @@ const AdminProducts = () => {
     product.sku?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  useEffect(() => {
+    return () => {
+      if (imagePreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  const resolveProductImage = (product) => {
+    const name = (product?.name || '').toLowerCase();
+    const categoryName = (product?.category?.name || '').toLowerCase();
+    const text = `${name} ${categoryName}`;
+
+    if (text.includes('5000') && text.includes('wala')) return '/api/uploads/products/5000-walas-crackers.jpg';
+    if (text.includes('1000') && text.includes('wala')) return '/api/uploads/products/1000Wala.webp';
+    if (text.includes('dragon') && text.includes('bomb')) return '/api/uploads/products/DragonBomb.jpg';
+    if (text.includes('atom') && text.includes('bomb')) return '/api/uploads/products/AtomBomb.png';
+    if (text.includes('hydro') && text.includes('bomb')) return '/api/uploads/products/DragonBomb.jpg';
+    if (text.includes('hydrogen') && text.includes('bomb')) return '/api/uploads/products/DragonBomb.jpg';
+    if (text.includes('paper') && text.includes('bomb')) return '/api/uploads/products/ClassicAtomBomb.jpg';
+    if (text.includes('pubg') && text.includes('bomb')) return '/api/uploads/products/DragonBomb.jpg';
+    if (text.includes('bomb')) return '/api/uploads/products/AtomBomb.png';
+
+    if (name.includes('100 shot')) return '/images/products/100 shot.webp';
+    if (name.includes('200 shot')) return '/images/products/200 shot.webp';
+    if (name.includes('265 shot')) return '/images/products/265 shot.webp';
+    if (text.includes('chakkar')) return '/images/products/ground-chakkar.jpg';
+    if (text.includes('flower pot') || text.includes('flowerpot')) return '/images/products/flower-pots.png';
+
+    if (product?.imageUrl && product.imageUrl !== '/images/default-cracker.png') {
+      return product.imageUrl;
+    }
+
+    return null;
+  };
+
   const openModal = (product = null) => {
     if (product) {
       setEditingProduct(product);
@@ -107,15 +145,17 @@ const AdminProducts = () => {
         price: product.price || '',
         discountPrice: product.discountPrice || '',
         stock: product.stock || '',
-        minStock: product.minStock || '10',
         unit: product.unit || 'piece',
-        safetyLevel: product.safetyLevel || 'medium',
+        itemsPerUnit: product.itemsPerUnit || '1',
         isActive: product.isActive ?? true,
       });
+      setImagePreview(resolveProductImage(product) || '');
     } else {
       setEditingProduct(null);
       setFormData(initialFormState);
+      setImagePreview('');
     }
+    setImageFile(null);
     setShowModal(true);
   };
 
@@ -123,23 +163,66 @@ const AdminProducts = () => {
     setShowModal(false);
     setEditingProduct(null);
     setFormData(initialFormState);
+    setImageFile(null);
+    setImagePreview('');
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(editingProduct ? resolveProductImage(editingProduct) || '' : '');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      e.target.value = '';
+      return;
+    }
+
+    if (imagePreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    const productData = {
-      ...formData,
-      price: parseFloat(formData.price),
-      discountPrice: formData.discountPrice ? parseFloat(formData.discountPrice) : null,
-      stock: parseInt(formData.stock),
-      minStock: parseInt(formData.minStock),
-    };
+
+    const price = Number(formData.price);
+    const hasDiscountInput = formData.discountPrice !== '';
+    const discountPrice = hasDiscountInput ? Number(formData.discountPrice) : null;
+
+    if (discountPrice != null && discountPrice > price) {
+      toast.error('Offer price must be less than or equal to MRP');
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append('name', formData.name.trim());
+    payload.append('category', formData.category);
+    payload.append('description', formData.description.trim());
+    payload.append('price', String(price));
+    payload.append('discountPrice', discountPrice != null ? String(discountPrice) : '');
+    payload.append('stock', String(Number(formData.stock)));
+    payload.append('unit', formData.unit);
+    payload.append('itemsPerUnit', String(Number(formData.itemsPerUnit)));
+    payload.append('isActive', String(formData.isActive));
+    if (imageFile) payload.append('image', imageFile);
 
     if (editingProduct) {
-      updateMutation.mutate({ id: editingProduct._id, data: productData });
+      updateMutation.mutate({ id: editingProduct._id, data: payload });
     } else {
-      createMutation.mutate(productData);
+      createMutation.mutate(payload);
     }
   };
 
@@ -218,6 +301,7 @@ const AdminProducts = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Product</th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">Category</th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">Price</th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">Offer</th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">Stock</th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
@@ -228,8 +312,17 @@ const AdminProducts = () => {
                   <tr key={product._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-subtle rounded-lg flex items-center justify-center">
-                          <span className="text-xl">🎆</span>
+                        <div className="w-12 h-12 bg-gradient-subtle rounded-lg flex items-center justify-center overflow-hidden">
+                          {resolveProductImage(product) && !failedImages[product._id] ? (
+                            <img
+                              src={resolveProductImage(product)}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                              onError={() => setFailedImages((prev) => ({ ...prev, [product._id]: true }))}
+                            />
+                          ) : (
+                            <span className="text-xl">🎆</span>
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 line-clamp-1">{product.name}</p>
@@ -241,12 +334,14 @@ const AdminProducts = () => {
                       {product.category?.name}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <div>
-                        <p className="font-medium text-gray-900">₹{product.price?.toLocaleString()}</p>
-                        {product.discountPrice && (
-                          <p className="text-xs text-green-600">Sale: ₹{product.discountPrice?.toLocaleString()}</p>
-                        )}
-                      </div>
+                      <p className="font-medium text-gray-900">₹{product.price?.toLocaleString()}</p>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {product.discountPrice != null && product.discountPrice < product.price ? (
+                        <p className="font-medium text-green-600">₹{product.discountPrice?.toLocaleString()}</p>
+                      ) : (
+                        <p className="text-gray-400">—</p>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className={`font-medium ${
@@ -346,14 +441,33 @@ const AdminProducts = () => {
 
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
+                    Description *
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="input"
                     rows={3}
+                    required
                   />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Product Image
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="input"
+                    onChange={handleImageChange}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Upload JPG, PNG or WEBP (max 5MB)</p>
+                  {imagePreview ? (
+                    <div className="mt-3 w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  ) : null}
                 </div>
 
                 <div>
@@ -375,7 +489,7 @@ const AdminProducts = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Unit
+                    Unit *
                   </label>
                   <select
                     value={formData.unit}
@@ -391,7 +505,7 @@ const AdminProducts = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price (₹) *
+                    MRP (₹) *
                   </label>
                   <input
                     type="number"
@@ -406,21 +520,30 @@ const AdminProducts = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discount Price (₹)
+                    Offer Price (₹)
                   </label>
-                  <input
-                    type="number"
-                    value={formData.discountPrice}
-                    onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })}
-                    className="input"
-                    min="0"
-                    step="0.01"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={formData.discountPrice}
+                      onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })}
+                      className="input"
+                      min="0"
+                      step="0.01"
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary whitespace-nowrap"
+                      onClick={() => setFormData({ ...formData, discountPrice: '' })}
+                    >
+                      Remove Offer
+                    </button>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Stock *
+                    Stock Quantity *
                   </label>
                   <input
                     type="number"
@@ -434,30 +557,16 @@ const AdminProducts = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Minimum Stock Alert
+                    Items / Unit *
                   </label>
                   <input
                     type="number"
-                    value={formData.minStock}
-                    onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
+                    value={formData.itemsPerUnit}
+                    onChange={(e) => setFormData({ ...formData, itemsPerUnit: e.target.value })}
                     className="input"
-                    min="0"
+                    min="1"
+                    required
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Safety Level
-                  </label>
-                  <select
-                    value={formData.safetyLevel}
-                    onChange={(e) => setFormData({ ...formData, safetyLevel: e.target.value })}
-                    className="input"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
                 </div>
 
                 <div>

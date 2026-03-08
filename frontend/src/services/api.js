@@ -4,14 +4,15 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
+    if (!(config.data instanceof FormData) && !config.headers?.['Content-Type']) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -52,8 +53,13 @@ export const productsAPI = {
   getFeatured: () => api.get('/products/featured').then(res => res.data),
   getByCategory: (categoryId, params) => api.get(`/products/category/${categoryId}`, { params }).then(res => res.data),
   create: (data) => api.post('/products', data).then(res => res.data),
+  createWithImage: (formData) => api.post('/products', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(res => res.data),
   update: (id, data) => api.put(`/products/${id}`, data).then(res => res.data),
   delete: (id) => api.delete(`/products/${id}`).then(res => res.data),
+  applyStoreDiscount: (data) => api.put('/products/admin/store-discount', data).then(res => res.data),
+  removeStoreDiscount: () => api.put('/products/admin/store-discount/remove').then(res => res.data),
 };
 
 // Categories API
@@ -71,7 +77,9 @@ export const ordersAPI = {
   getMyOrders: (params) => api.get('/orders/my-orders', { params }).then(res => res.data),
   getById: (id) => api.get(`/orders/${id}`).then(res => res.data),
   getAll: (params) => api.get('/orders', { params }).then(res => res.data),
-  updateStatus: (id, status) => api.put(`/orders/${id}/status`, { status }).then(res => res.data),
+  updateStatus: (id, status, cancellationReason) => api.put(`/orders/${id}/status`, { status, cancellationReason }).then(res => res.data),
+  updateTracking: (id, field, checked) => api.put(`/orders/${id}/tracking`, { field, checked }).then(res => res.data),
+  uncancel: (id) => api.put(`/orders/${id}/uncancel`).then(res => res.data),
   cancel: (id) => api.put(`/orders/${id}/cancel`).then(res => res.data),
 };
 

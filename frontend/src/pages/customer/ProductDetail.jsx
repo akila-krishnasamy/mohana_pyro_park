@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingCart, Minus, Plus, ArrowLeft, Shield, Truck, RotateCcw } from 'lucide-react';
@@ -12,6 +12,12 @@ const ProductDetail = () => {
   const { addItem } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
   const [quantity, setQuantity] = useState(1);
+  const [imageError, setImageError] = useState(false);
+
+  // Reset image error when product changes
+  useEffect(() => {
+    setImageError(false);
+  }, [id]);
 
   // Only customers (or unauthenticated users) can shop
   const canShop = !isAuthenticated || user?.role === 'customer';
@@ -21,6 +27,31 @@ const ProductDetail = () => {
     queryFn: () => productsAPI.getOne(id),
     select: (res) => res.product,
   });
+
+  // Get image URL - try product imageUrl or match by name
+  const getProductImage = () => {
+    if (!product) return null;
+    
+    // If product has a valid imageUrl (local path), use it
+    if (product.imageUrl && product.imageUrl.startsWith('/images/products/')) {
+      return product.imageUrl;
+    }
+    
+    // Try to match product name to local image file
+    const productName = product.name?.toLowerCase();
+    if (productName?.includes('100 shot')) return '/images/products/100 shot.webp';
+    if (productName?.includes('200 shot')) return '/images/products/200 shot.webp';
+    if (productName?.includes('265 shot')) return '/images/products/265 shot.webp';
+    
+    // Return the imageUrl if it exists (external URL)
+    if (product.imageUrl && product.imageUrl !== '/images/default-cracker.png') {
+      return product.imageUrl;
+    }
+    
+    return null;
+  };
+
+  const productImage = product ? getProductImage() : null;
 
   if (isLoading) return <PageLoader />;
   if (isError) return <ErrorMessage message="Failed to load product" onRetry={refetch} />;
@@ -69,7 +100,16 @@ const ProductDetail = () => {
         {/* Product Image */}
         <div className="space-y-4">
           <div className="aspect-square bg-gradient-subtle rounded-2xl flex items-center justify-center relative overflow-hidden">
-            <div className="text-[150px]">🎆</div>
+            {productImage && !imageError ? (
+              <img 
+                src={productImage} 
+                alt={product.name} 
+                className="w-full h-full object-cover"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="text-[150px]">🎆</div>
+            )}
             
             {/* Badges */}
             <div className="absolute top-4 left-4 flex flex-col gap-2">

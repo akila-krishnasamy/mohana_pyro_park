@@ -119,6 +119,11 @@ const MyOrders = () => {
                       <Calendar className="w-4 h-4" />
                       <span>{formatDate(order.createdAt)}</span>
                     </div>
+                    {order.status === 'cancelled' && order.cancellationReason && (
+                      <p className="text-sm text-red-600 mt-1">
+                        Reason: {order.cancellationReason}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-600 mt-2">
                       {order.items?.length} item{order.items?.length !== 1 ? 's' : ''} • 
                       <span className="font-medium text-gray-900 ml-1">
@@ -140,10 +145,14 @@ const MyOrders = () => {
                   {order.items?.slice(0, 4).map((item, index) => (
                     <div
                       key={index}
-                      className="w-12 h-12 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0"
+                      className="w-12 h-12 bg-gradient-subtle rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden"
                       title={item.product?.name}
                     >
-                      <span className="text-lg">🎆</span>
+                      {item.product?.imageUrl && item.product.imageUrl !== '/images/default-cracker.png' ? (
+                        <img src={item.product.imageUrl} alt={item.product?.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg">🎆</span>
+                      )}
                     </div>
                   ))}
                   {order.items?.length > 4 && (

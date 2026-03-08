@@ -104,7 +104,7 @@ const orderSchema = new mongoose.Schema({
   // Status management
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'packing', 'ready', 'out-for-delivery', 'delivered', 'picked-up', 'cancelled'],
+    enum: ['pending', 'confirmed', 'processing', 'shipped', 'reached-hub', 'delivered', 'picked-up', 'cancelled'],
     default: 'pending'
   },
   statusTimeline: [statusTimelineSchema],
@@ -153,7 +153,37 @@ const orderSchema = new mongoose.Schema({
   packedAt: Date,
   readyAt: Date,
   deliveredAt: Date,
-  cancelledAt: Date
+  cancelledAt: Date,
+  cancellationReason: {
+    type: String,
+    default: ''
+  },
+  cancelledBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+
+  // Staff tracking checkboxes
+  orderPicked: {
+    checked: { type: Boolean, default: false },
+    checkedAt: Date,
+    checkedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  },
+  shipped: {
+    checked: { type: Boolean, default: false },
+    checkedAt: Date,
+    checkedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  },
+  reachedHub: {
+    checked: { type: Boolean, default: false },
+    checkedAt: Date,
+    checkedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  },
+  arrivedHub: {
+    checked: { type: Boolean, default: false },
+    checkedAt: Date,
+    checkedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  }
 
 }, {
   timestamps: true,
@@ -169,56 +199,13 @@ orderSchema.virtual('fulfillmentTime').get(function() {
   return null;
 });
 
-// Generate order number before saving
-orderSchema.pre('save', async function(next) {
-  if (!this.orderNumber) {
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    
-    // Count orders for today
-    const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(date.setHours(23, 59, 59, 999));
-    
-    const count = await mongoose.model('Order').countDocuments({
-      createdAt: { $gte: startOfDay, $lte: endOfDay }
-    });
-    
-    const sequence = (count + 1).toString().padStart(4, '0');
-    this.orderNumber = `MPP${year}${month}${day}${sequence}`;
-  }
-  next();
-});
-
-// Add status to timeline when status changes
+// Add status to timeline when status changes (only if modified programmatically outside controller)
 orderSchema.pre('save', function(next) {
-  if (this.isModified('status')) {
+  if (this.isModified('status') && this.statusTimeline.length === 0) {
     this.statusTimeline.push({
       status: this.status,
       timestamp: new Date()
     });
-
-    // Set specific timestamps based on status
-    const now = new Date();
-    switch (this.status) {
-      case 'confirmed':
-        this.confirmedAt = now;
-        break;
-      case 'packing':
-        break;
-      case 'ready':
-        this.readyAt = now;
-        this.packedAt = now;
-        break;
-      case 'delivered':
-      case 'picked-up':
-        this.deliveredAt = now;
-        break;
-      case 'cancelled':
-        this.cancelledAt = now;
-        break;
-    }
   }
   next();
 });

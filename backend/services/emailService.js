@@ -15,6 +15,21 @@ const statusLabelMap = {
 
 const canSendEmail = () => Boolean(process.env.SMTP_PASS);
 
+const normalizeEmailError = (error) => {
+  const code = error?.code || '';
+  const message = error?.message || 'Unknown email error';
+
+  if (code === 'ETIMEDOUT' || /timeout/i.test(message)) {
+    return 'SMTP connection timeout (network/firewall blocked for smtp.gmail.com:587/465)';
+  }
+
+  if (code === 'ESOCKET') {
+    return 'SMTP socket connection failed (check internet/firewall and SMTP host/port)';
+  }
+
+  return message;
+};
+
 const safeSend = async (mailOptions) => {
   if (!canSendEmail()) {
     return { skipped: true, reason: 'SMTP_PASS not configured' };
@@ -24,7 +39,7 @@ const safeSend = async (mailOptions) => {
     await transporter.sendMail(mailOptions);
     return { skipped: false };
   } catch (error) {
-    return { skipped: true, reason: error.message };
+    return { skipped: true, reason: normalizeEmailError(error) };
   }
 };
 

@@ -8,7 +8,7 @@ import InventoryLog from '../models/InventoryLog.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mohana_pyro_park';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://akilak23cse_db_user:hRKuM2xtjGW26HgW@cluster0.ododkjk.mongodb.net/mohana_pyro_park?retryWrites=true&w=majority&appName=Cluster0';
 
 // Real categories from Mohana Pyro Park website
 const categories = [

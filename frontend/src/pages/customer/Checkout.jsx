@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { MapPin, Truck, Store, CreditCard, ArrowLeft, Check, Loader } from 'lucide-react';
 import { useCartStore, useAuthStore } from '../../store';
 import { ordersAPI } from '../../services/api';
+import { PurchaseSuccessPopup } from '../../components/common';
 import toast from 'react-hot-toast';
 
 const Checkout = () => {
@@ -13,6 +14,7 @@ const Checkout = () => {
 
   const [deliveryMethod, setDeliveryMethod] = useState('delivery');
   const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [showPopup, setShowPopup] = useState(false);
   const [formData, setFormData] = useState({
     street: '',
     city: '',
@@ -31,7 +33,10 @@ const Checkout = () => {
     onSuccess: (response) => {
       clearCart();
       toast.success('Order placed successfully!');
-      navigate(`/orders/${response.order._id}`);
+      setShowPopup(true);
+      setTimeout(() => {
+        navigate(`/orders/${response.order._id}`);
+      }, 3000);
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to place order');
@@ -385,6 +390,11 @@ const Checkout = () => {
           </div>
         </div>
       </form>
+
+      <PurchaseSuccessPopup
+        isOpen={showPopup}
+        onClose={() => setShowPopup(false)}
+      />
     </div>
   );
 };

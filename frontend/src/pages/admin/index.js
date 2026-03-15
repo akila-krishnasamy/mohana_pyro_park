@@ -4,5 +4,6 @@ export { default as OrderDetail } from './OrderDetail';
 export { default as Inventory } from './Inventory';
 export { default as Products } from './Products';
 export { default as NewArrival } from './NewArrival';
+export { default as Campaigns } from './Campaigns';
 export { default as Analytics } from './Analytics';
 export { default as Users } from './Users';

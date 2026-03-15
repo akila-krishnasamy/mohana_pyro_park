@@ -66,7 +66,7 @@ Create a `.env` file in the backend folder:
 ```env
 NODE_ENV=development
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/mohana_pyro_park
+MONGODB_URI=mongodb+srv://akilak23cse_db_user:hRKuM2xtjGW26HgW@cluster0.ododkjk.mongodb.net/mohana_pyro_park?retryWrites=true&w=majority&appName=Cluster0
 JWT_SECRET=your_super_secret_jwt_key_change_in_production
 JWT_EXPIRE=30d
 ```

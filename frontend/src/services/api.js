@@ -110,4 +110,11 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`).then(res => res.data),
 };
 
+// Campaigns API
+export const campaignsAPI = {
+  getRecipientsSummary: () => api.get('/campaigns/recipients').then(res => res.data),
+  getRecipientsList: (params) => api.get('/campaigns/recipients/list', { params }).then(res => res.data),
+  sendToCustomers: (data) => api.post('/campaigns/send', data).then(res => res.data),
+};
+
 export default api;

@@ -743,7 +743,9 @@ export const updateOrderTracking = async (req, res, next) => {
       .populate('shipped.checkedBy', 'name')
       .populate('reachedHub.checkedBy', 'name');
 
-    if (statusChanged) {
+    const shouldNotifyOnTick = checked === true && updatedOrder.status !== 'cancelled';
+
+    if (statusChanged || shouldNotifyOnTick) {
       await sendOrderStatusEmail({
         to: updatedOrder.customer?.email,
         customerName: updatedOrder.customer?.name,

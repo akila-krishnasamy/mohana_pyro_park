@@ -122,6 +122,9 @@ const AdminProducts = () => {
     if (text.includes('pubg') && text.includes('bomb')) return '/api/uploads/products/DragonBomb.jpg';
     if (text.includes('bomb')) return '/api/uploads/products/AtomBomb.png';
 
+    if (text.includes('sky') && text.includes('shot')) return '/images/products/sky-shot-rocket.png';
+    if (text.includes('sparkler')) return '/images/products/whistling-rocket.png';
+
     if (name.includes('100 shot')) return '/images/products/100 shot.webp';
     if (name.includes('200 shot')) return '/images/products/200 shot.webp';
     if (name.includes('265 shot')) return '/images/products/265 shot.webp';

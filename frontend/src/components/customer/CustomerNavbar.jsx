@@ -40,7 +40,9 @@ const CustomerNavbar = () => {
     { label: 'Home', path: '/' },
     { label: 'Products', path: '/products' },
     { label: 'Quick Purchase', path: '/quick-purchase' },
+    { label: 'Diwali Fund', path: '/diwali-fund' },
     { label: 'Payment Methods', path: '/payment-methods' },
+    { label: 'Media Gallery', path: '/media' },
   ];
 
   return (

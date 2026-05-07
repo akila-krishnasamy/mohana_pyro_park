@@ -34,6 +34,7 @@ const AdminProducts = () => {
     price: '',
     discountPrice: '',
     stock: '',
+    lowStockThreshold: '10',
     unit: 'piece',
     itemsPerUnit: '1',
     isActive: true,
@@ -122,6 +123,9 @@ const AdminProducts = () => {
     if (text.includes('pubg') && text.includes('bomb')) return '/api/uploads/products/DragonBomb.jpg';
     if (text.includes('bomb')) return '/api/uploads/products/AtomBomb.png';
 
+    if (text.includes('sky') && text.includes('shot')) return '/images/products/sky-shot-rocket.png';
+    if (text.includes('sparkler')) return '/images/products/whistling-rocket.png';
+
     if (name.includes('100 shot')) return '/images/products/100 shot.webp';
     if (name.includes('200 shot')) return '/images/products/200 shot.webp';
     if (name.includes('265 shot')) return '/images/products/265 shot.webp';
@@ -135,6 +139,8 @@ const AdminProducts = () => {
     return null;
   };
 
+  const getLowStockThreshold = (product) => product.lowStockThreshold ?? 10;
+
   const openModal = (product = null) => {
     if (product) {
       setEditingProduct(product);
@@ -145,6 +151,7 @@ const AdminProducts = () => {
         price: product.price || '',
         discountPrice: product.discountPrice || '',
         stock: product.stock || '',
+        lowStockThreshold: String(product.lowStockThreshold ?? 10),
         unit: product.unit || 'piece',
         itemsPerUnit: product.itemsPerUnit || '1',
         isActive: product.isActive ?? true,
@@ -214,6 +221,7 @@ const AdminProducts = () => {
     payload.append('price', String(price));
     payload.append('discountPrice', discountPrice != null ? String(discountPrice) : '');
     payload.append('stock', String(Number(formData.stock)));
+    payload.append('lowStockThreshold', String(Number(formData.lowStockThreshold)));
     payload.append('unit', formData.unit);
     payload.append('itemsPerUnit', String(Number(formData.itemsPerUnit)));
     payload.append('isActive', String(formData.isActive));
@@ -346,7 +354,7 @@ const AdminProducts = () => {
                     <td className="px-6 py-4 text-center">
                       <span className={`font-medium ${
                         product.stock === 0 ? 'text-red-600' : 
-                        product.stock <= product.minStock ? 'text-amber-600' : 'text-gray-900'
+                        product.stock <= getLowStockThreshold(product) ? 'text-amber-600' : 'text-gray-900'
                       }`}>
                         {product.stock}
                       </span>
@@ -549,6 +557,20 @@ const AdminProducts = () => {
                     type="number"
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    className="input"
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Minimum Stock Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.lowStockThreshold}
+                    onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value })}
                     className="input"
                     min="0"
                     required

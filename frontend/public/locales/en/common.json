@@ -1,0 +1,102 @@
+{
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "quickPurchase": "Quick Purchase",
+    "diwaliFund": "Diwali Fund",
+    "paymentMethods": "Payment Methods",
+    "mediaGallery": "Media Gallery",
+    "aboutUs": "About Us",
+    "contact": "Contact",
+    "cart": "Cart",
+    "myOrders": "My Orders",
+    "profile": "Profile",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "language": "Language",
+    "admin": "Admin",
+    "dashboard": "Dashboard",
+    "adminPanel": "Admin Panel",
+    "loggedInAs": "Logged in as"
+  },
+  "common": {
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "close": "Close",
+    "view": "View",
+    "details": "Details",
+    "price": "Price",
+    "quantity": "Quantity",
+    "total": "Total",
+    "status": "Status",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "viewAll": "View All Products"
+  },
+  "hero": {
+    "tagline": "Premium Sivakasi Crackers",
+    "title": "Light Up Your",
+    "subtitle": "Celebrations",
+    "description": "Discover our wide range of premium quality crackers. From sparklers to sky shots, we have everything to make your festivals memorable.",
+    "shopNow": "Shop Now",
+    "viewGiftBoxes": "View Gift Boxes"
+  },
+  "features": {
+    "delivery": {
+      "title": "Free Delivery",
+      "desc": "On orders above ₹2000"
+    },
+    "safe": {
+      "title": "Safe & Certified",
+      "desc": "Quality assured products"
+    },
+    "gift": {
+      "title": "Gift Packing",
+      "desc": "Beautiful presentation"
+    },
+    "prices": {
+      "title": "Best Prices",
+      "desc": "Factory direct rates"
+    }
+  },
+  "categories": {
+    "title": "Shop by Category",
+    "description": "Explore our wide range of crackers organized by categories for easy shopping",
+    "productCount": "{{count}} products"
+  },
+  "brands": {
+    "title": "Brands We Handle"
+  },
+  "bestSellers": {
+    "title": "Best Sellers",
+    "description": "Our most popular products loved by customers"
+  },
+  "cta": {
+    "title": "Ready to Light Up Your Festival?",
+    "description": "Browse our collection of premium quality crackers and gift boxes. Get the best prices with free delivery on orders above ₹2000.",
+    "startShopping": "Start Shopping"
+  },
+  "footer": {
+    "aboutCompany": "About Company",
+    "quickLinks": "Quick Links",
+    "followUs": "Follow Us",
+    "contactInfo": "Contact Information",
+    "copyright": "© 2024 Mohana Pyro Park. All rights reserved."
+  }
+}

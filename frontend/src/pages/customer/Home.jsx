@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Sparkles, Truck, Shield, Gift, Star } from 'lucide-react';
 import { productsAPI, categoriesAPI } from '../../services/api';
 import ProductCard from '../../components/customer/ProductCard';
@@ -7,6 +8,7 @@ import { PageLoader, ErrorMessage } from '../../components/common';
 import { useState } from 'react';
 
 const Home = () => {
+  const { t } = useTranslation('common');
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ['featured-products'],
     queryFn: () => productsAPI.getFeatured(),
@@ -30,23 +32,22 @@ const Home = () => {
             <div>
               <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
                 <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-medium">Premium Sivakasi Crackers</span>
+                <span className="text-sm font-medium">{t('hero.tagline')}</span>
               </div>
               <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight">
-                Light Up Your <br />
-                <span className="text-accent-gold">Celebrations</span>
+                {t('hero.title')} <br />
+                <span className="text-accent-gold">{t('hero.subtitle')}</span>
               </h1>
               <p className="text-lg text-white/80 mb-8 max-w-lg">
-                Discover our wide range of premium quality crackers. From sparklers to 
-                sky shots, we have everything to make your festivals memorable.
+                {t('hero.description')}
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link to="/products" className="bg-white text-primary-600 font-semibold px-8 py-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2">
-                  Shop Now
+                  {t('hero.shopNow')}
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link to="/products?category=gift-boxes" className="border-2 border-white text-white font-semibold px-8 py-3 rounded-lg hover:bg-white/10 transition-colors">
-                  View Gift Boxes
+                  {t('hero.viewGiftBoxes')}
                 </Link>
               </div>
             </div>
@@ -66,18 +67,18 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: Truck, title: 'Free Delivery', desc: 'On orders above ₹2000' },
-              { icon: Shield, title: 'Safe & Certified', desc: 'Quality assured products' },
-              { icon: Gift, title: 'Gift Packing', desc: 'Beautiful presentation' },
-              { icon: Star, title: 'Best Prices', desc: 'Factory direct rates' },
+              { icon: Truck, key: 'delivery' },
+              { icon: Shield, key: 'safe' },
+              { icon: Gift, key: 'gift' },
+              { icon: Star, key: 'prices' },
             ].map((feature, index) => (
               <div key={index} className="flex items-start gap-4 p-4">
                 <div className="p-3 bg-primary-100 rounded-lg">
                   <feature.icon className="w-6 h-6 text-primary-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{feature.title}</h3>
-                  <p className="text-sm text-gray-500">{feature.desc}</p>
+                  <h3 className="font-semibold text-gray-900">{t(`features.${feature.key}.title`)}</h3>
+                  <p className="text-sm text-gray-500">{t(`features.${feature.key}.desc`)}</p>
                 </div>
               </div>
             ))}
@@ -89,9 +90,9 @@ const Home = () => {
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Shop by Category</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('categories.title')}</h2>
             <p className="text-gray-500 max-w-2xl mx-auto">
-              Explore our wide range of crackers organized by categories for easy shopping
+              {t('categories.description')}
             </p>
           </div>
 
@@ -115,7 +116,7 @@ const Home = () => {
                 <h3 className="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
                   {category.name}
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">{category.productCount} products</p>
+                <p className="text-sm text-gray-500 mt-1">{t('categories.productCount', { count: category.productCount })}</p>
               </Link>
             ))}
           </div>
@@ -126,7 +127,7 @@ const Home = () => {
       <section className="py-16 bg-gray-50 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Brands We Handle</h2>
+            <h2 className="text-3xl font-bold text-gray-900">{t('brands.title')}</h2>
           </div>
           
           {/* Brands Marquee */}
@@ -179,14 +180,14 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">Best Sellers</h2>
-              <p className="text-gray-500 mt-2">Our most popular products loved by customers</p>
+              <h2 className="text-3xl font-bold text-gray-900">{t('bestSellers.title')}</h2>
+              <p className="text-gray-500 mt-2">{t('bestSellers.description')}</p>
             </div>
             <Link
               to="/products"
               className="hidden md:flex items-center gap-2 text-primary-600 font-semibold hover:text-primary-700"
             >
-              View All Products
+              {t('common.viewAll')}
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -199,7 +200,7 @@ const Home = () => {
 
           <div className="text-center mt-8 md:hidden">
             <Link to="/products" className="btn-primary inline-flex items-center gap-2">
-              View All Products
+              {t('common.viewAll')}
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -210,17 +211,16 @@ const Home = () => {
       <section className="py-16 bg-gradient-to-r from-primary-500 to-secondary-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Light Up Your Festival?
+            {t('cta.title')}
           </h2>
           <p className="text-white/80 mb-8 max-w-2xl mx-auto">
-            Browse our collection of premium quality crackers and gift boxes. 
-            Get the best prices with free delivery on orders above ₹2000.
+            {t('cta.description')}
           </p>
           <Link
             to="/products"
             className="inline-flex items-center gap-2 bg-white text-primary-600 font-semibold px-8 py-3 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            Start Shopping
+            {t('cta.startShopping')}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

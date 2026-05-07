@@ -1,0 +1,23 @@
+{
+  "title": "कार्ट",
+  "emptyCart": "आपकी कार्ट खाली है",
+  "continueShopping": "खरीदारी जारी रखें",
+  "checkout": "खरीदारी पूरी करें",
+  "proceedToCheckout": "खरीदारी पूरी करने के लिए आगे बढ़ें",
+  "cartItems": "कार्ट आइटम",
+  "subtotal": "उप कुल",
+  "tax": "कर",
+  "shipping": "शिपिंग",
+  "total": "कुल",
+  "removeItem": "आइटम हटाएं",
+  "updateQuantity": "मात्रा अपडेट करें",
+  "quantity": "मात्रा",
+  "price": "कीमत",
+  "itemTotal": "आइटम कुल",
+  "applyCoupon": "कूपन लागू करें",
+  "coupon": "कूपन कोड",
+  "discount": "छूट",
+  "estimatedDelivery": "अनुमानित डिलीवरी",
+  "continueShoppingMessage": "अपनी कार्ट में आइटम जोड़ें और खरीदारी पूरी करने के लिए वापस आएं।",
+  "removeConfirm": "क्या आप वाकई इस आइटम को हटाना चाहते हैं?"
+}

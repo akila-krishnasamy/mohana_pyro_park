@@ -5,6 +5,7 @@ import {
   Package,
   Plus,
   Percent,
+  MessageCircle,
   ShoppingCart,
   BarChart3,
   Users,
@@ -38,6 +39,7 @@ const AdminLayout = () => {
     { name: 'Products', path: '/admin/products', icon: Package, roles: ['manager', 'owner'] },
     { name: 'New Arrival', path: '/admin/new-arrival', icon: Plus, roles: ['manager', 'owner'] },
     { name: 'Store Discount', path: '/admin/store-discount', icon: Percent, roles: ['manager', 'owner'] },
+    { name: 'Campaigns', path: '/admin/campaigns', icon: MessageCircle, roles: ['manager', 'owner'] },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart3, roles: ['owner'] },
     { name: 'Users', path: '/admin/users', icon: Users, roles: ['manager', 'owner'] },
   ];

@@ -110,4 +110,20 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`).then(res => res.data),
 };
 
+// Campaigns API
+export const campaignsAPI = {
+  getRecipientsSummary: () => api.get('/campaigns/recipients').then(res => res.data),
+  getRecipientsList: (params) => api.get('/campaigns/recipients/list', { params }).then(res => res.data),
+  sendToCustomers: (data) => api.post('/campaigns/send', data).then(res => res.data),
+};
+
+// Translation API
+export const translationsAPI = {
+  getLanguages: () => api.get('/translations/languages').then(res => res.data),
+  translateText: (text, targetLanguage, sourceLanguage = 'en') => 
+    api.post('/translations/translate', { text, targetLanguage, sourceLanguage }).then(res => res.data),
+  translateBatch: (texts, targetLanguage, sourceLanguage = 'en') => 
+    api.post('/translations/translate-batch', { texts, targetLanguage, sourceLanguage }).then(res => res.data),
+};
+
 export default api;

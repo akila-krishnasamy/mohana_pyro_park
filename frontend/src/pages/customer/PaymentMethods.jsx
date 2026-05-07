@@ -72,9 +72,6 @@ const PaymentMethods = () => {
             Payment Methods
           </h1>
           <div className="text-center mt-2 text-pink-200">
-            <span>Mohana Pyro Park</span>
-            <span className="mx-2">{'>'}</span>
-            <span className="text-white">Payment Methods</span>
           </div>
         </div>
       </div>

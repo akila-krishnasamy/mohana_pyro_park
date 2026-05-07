@@ -34,7 +34,11 @@ const Register = () => {
       navigate('/');
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Registration failed';
+      toast.error(message);
     },
   });
 

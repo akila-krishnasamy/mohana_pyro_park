@@ -19,7 +19,9 @@ import MyOrders from './pages/customer/MyOrders';
 import OrderDetail from './pages/customer/OrderDetail';
 import Profile from './pages/customer/Profile';
 import QuickPurchase from './pages/customer/QuickPurchase';
+import DiwaliFund from './pages/customer/DiwaliFund';
 import PaymentMethods from './pages/customer/PaymentMethods';
+import MediaGallery from './pages/customer/MediaGallery';
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
@@ -32,6 +34,7 @@ import NewArrival from './pages/admin/NewArrival';
 import StoreDiscount from './pages/admin/StoreDiscount';
 import Analytics from './pages/admin/Analytics';
 import Users from './pages/admin/Users';
+import Campaigns from './pages/admin/Campaigns';
 
 // Protected Route Components
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -103,6 +106,8 @@ function App() {
         <Route path="products" element={<Products />} />
         <Route path="products/:id" element={<ProductDetail />} />
         <Route path="payment-methods" element={<PaymentMethods />} />
+        <Route path="media" element={<MediaGallery />} />
+        <Route path="diwali-fund" element={<DiwaliFund />} />
         <Route path="quick-purchase" element={
           <CustomerOnlyRoute>
             <QuickPurchase />
@@ -173,6 +178,11 @@ function App() {
         <Route path="users" element={
           <ProtectedRoute allowedRoles={['manager', 'owner']}>
             <Users />
+          </ProtectedRoute>
+        } />
+        <Route path="campaigns" element={
+          <ProtectedRoute allowedRoles={['manager', 'owner']}>
+            <Campaigns />
           </ProtectedRoute>
         } />
       </Route>

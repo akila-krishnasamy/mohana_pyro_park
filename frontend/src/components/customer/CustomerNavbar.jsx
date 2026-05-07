@@ -1,10 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Menu, X, LogOut, Package, ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Logo } from '../common';
+import LanguageSelector from '../common/LanguageSelector';
 import { useAuthStore, useCartStore, useUIStore } from '../../store';
 
 const CustomerNavbar = () => {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
   const { getItemCount } = useCartStore();
@@ -37,10 +40,12 @@ const CustomerNavbar = () => {
   };
 
   const navLinks = [
-    { label: 'Home', path: '/' },
-    { label: 'Products', path: '/products' },
-    { label: 'Quick Purchase', path: '/quick-purchase' },
-    { label: 'Payment Methods', path: '/payment-methods' },
+    { label: t('nav.home'), path: '/' },
+    { label: t('nav.products'), path: '/products' },
+    { label: t('nav.quickPurchase'), path: '/quick-purchase' },
+    { label: t('nav.diwaliFund'), path: '/diwali-fund' },
+    { label: t('nav.paymentMethods'), path: '/payment-methods' },
+    { label: t('nav.mediaGallery'), path: '/media' },
   ];
 
   return (
@@ -67,6 +72,9 @@ const CustomerNavbar = () => {
 
           {/* Desktop Right Section */}
           <div className="hidden md:flex items-center gap-4">
+            {/* Language Selector */}
+            <LanguageSelector />
+
             {/* Cart - Only show for customers */}
             {canShop && (
               <Link
@@ -88,7 +96,7 @@ const CustomerNavbar = () => {
                 to="/admin"
                 className="btn-primary"
               >
-                Admin Panel
+                {t('nav.adminPanel')}
               </Link>
             )}
 
@@ -119,7 +127,7 @@ const CustomerNavbar = () => {
                         className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50"
                       >
                         <Package className="w-4 h-4" />
-                        My Orders
+                        {t('nav.myOrders')}
                       </Link>
                     )}
                     <Link
@@ -128,7 +136,7 @@ const CustomerNavbar = () => {
                       className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50"
                     >
                       <User className="w-4 h-4" />
-                      Profile
+                      {t('nav.profile')}
                     </Link>
                     {isStaff && (
                       <Link
@@ -136,7 +144,7 @@ const CustomerNavbar = () => {
                         onClick={() => setIsUserMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-2 text-primary-600 hover:bg-gray-50 font-medium"
                       >
-                        Admin Panel
+                        {t('nav.adminPanel')}
                       </Link>
                     )}
                     <hr className="my-2" />
@@ -145,7 +153,7 @@ const CustomerNavbar = () => {
                       className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-gray-50 w-full"
                     >
                       <LogOut className="w-4 h-4" />
-                      Logout
+                      {t('nav.logout')}
                     </button>
                   </div>
                 )}
@@ -153,10 +161,10 @@ const CustomerNavbar = () => {
             ) : (
               <div className="flex items-center gap-3">
                 <Link to="/login" className="btn-ghost">
-                  Login
+                  {t('nav.login')}
                 </Link>
                 <Link to="/register" className="btn-primary">
-                  Sign Up
+                  {t('nav.register')}
                 </Link>
               </div>
             )}
@@ -206,7 +214,7 @@ const CustomerNavbar = () => {
               >
                 <span className="flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5" />
-                  Cart
+                  {t('nav.cart')}
                 </span>
                 {cartCount > 0 && (
                   <span className="bg-primary-500 text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -220,7 +228,7 @@ const CustomerNavbar = () => {
               <>
                 <hr className="my-3" />
                 <div className="py-2 text-sm text-gray-500">
-                  Logged in as <span className="capitalize font-medium text-primary-600">{user?.role}</span>
+                  {t('nav.loggedInAs')} <span className="capitalize font-medium text-primary-600">{user?.role}</span>
                 </div>
                 {canShop && (
                   <Link
@@ -228,7 +236,7 @@ const CustomerNavbar = () => {
                     onClick={closeMobileMenu}
                     className="block py-2 text-gray-700"
                   >
-                    My Orders
+                    {t('nav.myOrders')}
                   </Link>
                 )}
                 <Link
@@ -236,7 +244,7 @@ const CustomerNavbar = () => {
                   onClick={closeMobileMenu}
                   className="block py-2 text-gray-700"
                 >
-                  Profile
+                  {t('nav.profile')}
                 </Link>
                 {isStaff && (
                   <Link
@@ -244,14 +252,14 @@ const CustomerNavbar = () => {
                     onClick={closeMobileMenu}
                     className="block py-2 text-primary-600 font-medium"
                   >
-                    Admin Panel
+                    {t('nav.adminPanel')}
                   </Link>
                 )}
                 <button
                   onClick={handleLogout}
                   className="block py-2 text-red-600 w-full text-left"
                 >
-                  Logout
+                  {t('nav.logout')}
                 </button>
               </>
             ) : (
@@ -262,14 +270,14 @@ const CustomerNavbar = () => {
                   onClick={closeMobileMenu}
                   className="block py-2 text-gray-700"
                 >
-                  Login
+                  {t('nav.login')}
                 </Link>
                 <Link
                   to="/register"
                   onClick={closeMobileMenu}
                   className="btn-primary block text-center"
                 >
-                  Sign Up
+                  {t('nav.register')}
                 </Link>
               </>
             )}

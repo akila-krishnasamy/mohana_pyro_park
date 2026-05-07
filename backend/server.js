@@ -32,6 +32,8 @@ const app = express();
 app.use(express.json());
 
 const defaultAllowedOrigins = [
+  'https://mohana-pyro-park-1.onrender.com',
+  'https://mohana-pyro-park.onrender.com',
   'https://crackers-psi.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
@@ -76,6 +78,24 @@ app.get('/api/health', (req, res) => {
     success: true, 
     message: 'Mohana Pyro Park API is running',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Root/API info routes for direct browser access
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Mohana Pyro Park backend is live',
+    healthCheck: '/api/health',
+    apiBase: '/api'
+  });
+});
+
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'API base route',
+    healthCheck: '/api/health'
   });
 });
 

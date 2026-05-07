@@ -18,7 +18,7 @@ import InventoryLog from '../models/InventoryLog.js';
 // Connect to MongoDB
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mohana_pyro_park');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://akilak23cse_db_user:hRKuM2xtjGW26HgW@cluster0.ododkjk.mongodb.net/mohana_pyro_park?retryWrites=true&w=majority&appName=Cluster0');
     console.log('MongoDB Connected for seeding...');
   } catch (error) {
     console.error('Database connection failed:', error.message);

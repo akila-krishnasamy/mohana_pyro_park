@@ -5,7 +5,7 @@ import Product from '../models/Product.js';
 dotenv.config();
 
 const run = async () => {
-  const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/mohana_pyro_park';
+  const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://akilak23cse_db_user:hRKuM2xtjGW26HgW@cluster0.ododkjk.mongodb.net/mohana_pyro_park?retryWrites=true&w=majority&appName=Cluster0';
   await mongoose.connect(mongoUri);
 
   const products = await Product.find({ isActive: true }).select('_id name imageUrl').lean();
